@@ -1,0 +1,817 @@
+zabbix_export:
+  version: '7.0'
+  template_groups:
+  - uuid: 36bff6c29af64692839d077febfc7079
+    name: Templates/Network devices
+  templates:
+  - uuid: a11d31f3fab147a8b1788014bf266b7a
+    template: Ubiquiti UniFi nanoHD by SNMP
+    name: Ubiquiti UniFi nanoHD by SNMP
+    description: Ubiquiti UniFi nanoHD (UAP-nanoHD, Wi-Fi 5 dual-band, 1GbE uplink) SNMP template for Zabbix 7.0.30.
+      Adapted from the previously successful Zabbix 7.0.30 template structure. Includes ICMP health and availability;
+      standard SNMP system information and interface traffic, errors and discards via IF-MIB; plus optional legacy
+      UBNT-UniFi-MIB radio and SSID/VAP discovery, client counts and wireless metrics. The specific legacy wireless
+      OIDs exposed depend on nanoHD firmware; this template has not been tested on a physical unit. Enable SNMP
+      in UniFi Network and configure an SNMP host interface on UDP 161. 64-bit interface counters are preferred,
+      with 32-bit fallback provided.
+    groups:
+    - name: Templates/Network devices
+    items:
+    - uuid: 3078d6f94aff4db8a5f94ebbf3f6f7a5
+      name: ICMP ping
+      type: SIMPLE
+      key: icmpping
+      delay: 1m
+      history: 7d
+      tags:
+      - tag: component
+        value: health
+      triggers:
+      - uuid: 9236d5c49fc1407b90e4dd8da70061bd
+        expression: max(/Ubiquiti UniFi nanoHD by SNMP/icmpping,#3)=0
+        name: 'nanoHD: Unavailable by ICMP ping'
+        priority: HIGH
+        description: Three consecutive ICMP checks failed.
+        tags:
+        - tag: scope
+          value: availability
+    - uuid: 786cb3a597d742f285a408d5e11694d6
+      name: ICMP packet loss
+      type: SIMPLE
+      key: icmppingloss
+      delay: 1m
+      value_type: FLOAT
+      units: '%'
+      tags:
+      - tag: component
+        value: health
+      triggers:
+      - uuid: 3d2f1a89bb2b48d6a2f4fb4ed0e63d46
+        expression: min(/Ubiquiti UniFi nanoHD by SNMP/icmppingloss,5m)>{$ICMP.LOSS.WARN} and min(/Ubiquiti UniFi
+          nanoHD by SNMP/icmppingloss,5m)<100
+        name: 'nanoHD: High ICMP packet loss'
+        priority: WARNING
+        description: Packet loss exceeded the warning threshold for 5 minutes.
+        tags:
+        - tag: scope
+          value: performance
+    - uuid: b783d9dab3d8446a9782a9d37f72158c
+      name: ICMP response time
+      type: SIMPLE
+      key: icmppingsec
+      delay: 1m
+      value_type: FLOAT
+      units: s
+      tags:
+      - tag: component
+        value: health
+      triggers:
+      - uuid: 07b2469dbfae4173a0cc0d80ed29328e
+        expression: avg(/Ubiquiti UniFi nanoHD by SNMP/icmppingsec,5m)>{$ICMP.RTT.WARN}
+        name: 'nanoHD: High ICMP response time'
+        priority: WARNING
+        description: Average round-trip time exceeded threshold for 5 minutes.
+        tags:
+        - tag: scope
+          value: performance
+    - uuid: 946278702fc54b80a7298ca6808f6600
+      name: SNMP network uptime
+      type: SNMP_AGENT
+      snmp_oid: get[1.3.6.1.2.1.1.3.0]
+      key: nanohd.system.uptime
+      delay: 1m
+      units: uptime
+      description: SNMP sysUpTime (TimeTicks / 100), representing SNMP agent uptime, not necessarily hardware uptime.
+      preprocessing:
+      - type: MULTIPLIER
+        parameters:
+        - '0.01'
+      tags:
+      - tag: component
+        value: health
+      triggers:
+      - uuid: f2aa1f696d124da2a66a930d7db77856
+        expression: nodata(/Ubiquiti UniFi nanoHD by SNMP/nanohd.system.uptime,15m)=1 and last(/Ubiquiti UniFi nanoHD
+          by SNMP/icmpping)=1
+        name: 'nanoHD: SNMP stops responding while ping succeeds'
+        priority: AVERAGE
+        description: Device replies to ping but sysUpTime polling has had no data for 15 minutes; check SNMP credentials/firewall.
+        tags:
+        - tag: scope
+          value: availability
+    - uuid: 87fe0a8b953d49fc97d6063cf1579d24
+      name: SNMP system description
+      type: SNMP_AGENT
+      snmp_oid: get[1.3.6.1.2.1.1.1.0]
+      key: nanohd.system.description
+      delay: 1h
+      value_type: CHAR
+      preprocessing:
+      - type: DISCARD_UNCHANGED_HEARTBEAT
+        parameters:
+        - 12h
+      tags:
+      - tag: component
+        value: inventory
+    - uuid: b6578327b7b64cc695b454fb26b49fb5
+      name: SNMP system object ID
+      type: SNMP_AGENT
+      snmp_oid: get[1.3.6.1.2.1.1.2.0]
+      key: nanohd.system.objectid
+      delay: 1h
+      value_type: CHAR
+      preprocessing:
+      - type: DISCARD_UNCHANGED_HEARTBEAT
+        parameters:
+        - 12h
+      tags:
+      - tag: component
+        value: inventory
+    - uuid: db43419d399f4b9fbd6bfe161ef0166a
+      name: SNMP system name
+      type: SNMP_AGENT
+      snmp_oid: get[1.3.6.1.2.1.1.5.0]
+      key: nanohd.system.name
+      delay: 1h
+      value_type: CHAR
+      preprocessing:
+      - type: DISCARD_UNCHANGED_HEARTBEAT
+        parameters:
+        - 12h
+      tags:
+      - tag: component
+        value: inventory
+    - uuid: f174d6ea05914130a58fe150f763244c
+      name: SNMP system location
+      type: SNMP_AGENT
+      snmp_oid: get[1.3.6.1.2.1.1.6.0]
+      key: nanohd.system.location
+      delay: 1h
+      value_type: CHAR
+      preprocessing:
+      - type: DISCARD_UNCHANGED_HEARTBEAT
+        parameters:
+        - 12h
+      tags:
+      - tag: component
+        value: inventory
+    - uuid: 80a6978afa4b4e88a9deeb4b6e60c2c6
+      name: SNMP system contact
+      type: SNMP_AGENT
+      snmp_oid: get[1.3.6.1.2.1.1.4.0]
+      key: nanohd.system.contact
+      delay: 1h
+      value_type: CHAR
+      preprocessing:
+      - type: DISCARD_UNCHANGED_HEARTBEAT
+        parameters:
+        - 12h
+      tags:
+      - tag: component
+        value: inventory
+    - uuid: 35fee4cbffc34d2594acfb162704d73e
+      name: UniFi reported AP model
+      type: SNMP_AGENT
+      snmp_oid: get[1.3.6.1.4.1.41112.1.6.3.3.0]
+      key: nanohd.unifi.model
+      delay: 10m
+      value_type: CHAR
+      preprocessing:
+      - type: DISCARD_UNCHANGED_HEARTBEAT
+        parameters:
+        - 4h
+      tags:
+      - tag: component
+        value: unifi
+    - uuid: 99d92dbb6ad14127b6a0d6eec8356302
+      name: UniFi reported firmware version
+      type: SNMP_AGENT
+      snmp_oid: get[1.3.6.1.4.1.41112.1.6.3.6.0]
+      key: nanohd.unifi.firmware
+      delay: 10m
+      value_type: CHAR
+      preprocessing:
+      - type: DISCARD_UNCHANGED_HEARTBEAT
+        parameters:
+        - 4h
+      tags:
+      - tag: component
+        value: unifi
+    - uuid: 03b88f45d8794000a86ce5bc8aafcaa7
+      name: UniFi reported uplink
+      type: SNMP_AGENT
+      snmp_oid: get[1.3.6.1.4.1.41112.1.6.3.4.0]
+      key: nanohd.unifi.uplink
+      delay: 10m
+      value_type: CHAR
+      preprocessing:
+      - type: DISCARD_UNCHANGED_HEARTBEAT
+        parameters:
+        - 4h
+      tags:
+      - tag: component
+        value: unifi
+    - uuid: 5b87b8d19c7d4295a12c3599beb43abc
+      name: UniFi reported isolated state
+      type: SNMP_AGENT
+      snmp_oid: get[1.3.6.1.4.1.41112.1.6.3.2.0]
+      key: nanohd.unifi.isolated
+      delay: 10m
+      preprocessing:
+      - type: DISCARD_UNCHANGED_HEARTBEAT
+        parameters:
+        - 4h
+      tags:
+      - tag: component
+        value: unifi
+      valuemap:
+        name: TruthValue (1=true, 2=false)
+      triggers:
+      - uuid: 487a590e85be4275adc6fe949da510bd
+        expression: last(/Ubiquiti UniFi nanoHD by SNMP/nanohd.unifi.isolated)=1
+        name: 'nanoHD: UniFi reports isolated AP'
+        priority: AVERAGE
+        tags:
+        - tag: scope
+          value: performance
+    discovery_rules:
+    - uuid: 9e9c1605b4074d62b617292ac8adc6fa
+      name: Network interface discovery (IF-MIB)
+      type: SNMP_AGENT
+      snmp_oid: discovery[{#IFNAME},1.3.6.1.2.1.2.2.1.2,{#IFADMIN},1.3.6.1.2.1.2.2.1.7]
+      key: nanohd.if.discovery
+      delay: 1h
+      description: Discover interfaces via IF-MIB. The nanoHD has one 1GbE network uplink; some firmware exposes
+        additional internal or wireless interfaces. Prefer 64-bit counters if implemented; 32-bit fallback is included.
+      filter:
+        conditions:
+        - macro: '{#IFNAME}'
+          value: '{$NANOHD.IF.MATCHES}'
+      item_prototypes:
+      - uuid: 110874d531754b4cbe7a4186ece7c239
+        name: 'Interface {#IFNAME}: Operational status'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.2.1.2.2.1.8.{#SNMPINDEX}]
+        key: nanohd.if.status[{#SNMPINDEX}]
+        delay: 2m
+        valuemap:
+          name: IF-MIB ifOperStatus
+        tags:
+        - tag: component
+          value: network
+      - uuid: bfad3bd818f0449bbf403591951dfab1
+        name: 'Interface {#IFNAME}: Admin status'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.2.1.2.2.1.7.{#SNMPINDEX}]
+        key: nanohd.if.admin[{#SNMPINDEX}]
+        delay: 5m
+        valuemap:
+          name: IF-MIB ifAdminStatus
+        tags:
+        - tag: component
+          value: network
+      - uuid: 8c56c9771d28482cb109462d9fc5632e
+        name: 'Interface {#IFNAME}: Incoming traffic (64-bit)'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.2.1.31.1.1.1.6.{#SNMPINDEX}]
+        key: nanohd.if.hc.in[{#SNMPINDEX}]
+        delay: 1m
+        units: bps
+        description: 64-bit IF-MIB octet counter; preferred where firmware implements ifXTable.
+        preprocessing:
+        - type: CHANGE_PER_SECOND
+        - type: MULTIPLIER
+          parameters:
+          - '8'
+        tags:
+        - tag: component
+          value: traffic
+      - uuid: b1013e0cdb89410683cdca9e3ffa3b2e
+        name: 'Interface {#IFNAME}: Outgoing traffic (64-bit)'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.2.1.31.1.1.1.10.{#SNMPINDEX}]
+        key: nanohd.if.hc.out[{#SNMPINDEX}]
+        delay: 1m
+        units: bps
+        description: 64-bit IF-MIB octet counter; preferred where firmware implements ifXTable.
+        preprocessing:
+        - type: CHANGE_PER_SECOND
+        - type: MULTIPLIER
+          parameters:
+          - '8'
+        tags:
+        - tag: component
+          value: traffic
+      - uuid: fe4058e5026241159520cf8a371c8ff6
+        name: 'Interface {#IFNAME}: Incoming traffic (32-bit fallback)'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.2.1.2.2.1.10.{#SNMPINDEX}]
+        key: nanohd.if.legacy.in[{#SNMPINDEX}]
+        delay: 1m
+        units: bps
+        description: Counter converted from bytes/s to bits/s. 32-bit counters may wrap at high throughput.
+        preprocessing:
+        - type: CHANGE_PER_SECOND
+        - type: MULTIPLIER
+          parameters:
+          - '8'
+        tags:
+        - tag: component
+          value: traffic
+      - uuid: b9d0bc73d91a4cf1b97f498da699b21f
+        name: 'Interface {#IFNAME}: Outgoing traffic (32-bit fallback)'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.2.1.2.2.1.16.{#SNMPINDEX}]
+        key: nanohd.if.legacy.out[{#SNMPINDEX}]
+        delay: 1m
+        units: bps
+        description: Counter converted from bytes/s to bits/s. 32-bit counters may wrap at high throughput.
+        preprocessing:
+        - type: CHANGE_PER_SECOND
+        - type: MULTIPLIER
+          parameters:
+          - '8'
+        tags:
+        - tag: component
+          value: traffic
+      - uuid: 4de8994619d04edba83351d523044700
+        name: 'Interface {#IFNAME}: Input errors'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.2.1.2.2.1.14.{#SNMPINDEX}]
+        key: nanohd.if.in.errors[{#SNMPINDEX}]
+        delay: 2m
+        units: pps
+        preprocessing:
+        - type: CHANGE_PER_SECOND
+        tags:
+        - tag: component
+          value: errors
+      - uuid: 496e833533fb4f3db85973140b2fa45b
+        name: 'Interface {#IFNAME}: Output errors'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.2.1.2.2.1.20.{#SNMPINDEX}]
+        key: nanohd.if.out.errors[{#SNMPINDEX}]
+        delay: 2m
+        units: pps
+        preprocessing:
+        - type: CHANGE_PER_SECOND
+        tags:
+        - tag: component
+          value: errors
+      - uuid: 97d60b8d9bdf41e7865cd623cc2780f6
+        name: 'Interface {#IFNAME}: Input discards'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.2.1.2.2.1.13.{#SNMPINDEX}]
+        key: nanohd.if.in.discards[{#SNMPINDEX}]
+        delay: 2m
+        units: pps
+        preprocessing:
+        - type: CHANGE_PER_SECOND
+        tags:
+        - tag: component
+          value: errors
+      - uuid: 35289ca3fe124b2fba17e8b81d0eb65a
+        name: 'Interface {#IFNAME}: Output discards'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.2.1.2.2.1.19.{#SNMPINDEX}]
+        key: nanohd.if.out.discards[{#SNMPINDEX}]
+        delay: 2m
+        units: pps
+        preprocessing:
+        - type: CHANGE_PER_SECOND
+        tags:
+        - tag: component
+          value: errors
+      graph_prototypes:
+      - uuid: 2d7161292c364ed8afbba0e137dfd155
+        name: 'Interface {#IFNAME}: Traffic (64-bit)'
+        graph_items:
+        - color: 199C0D
+          item:
+            host: Ubiquiti UniFi nanoHD by SNMP
+            key: nanohd.if.hc.in[{#SNMPINDEX}]
+        - sortorder: '1'
+          color: F63100
+          item:
+            host: Ubiquiti UniFi nanoHD by SNMP
+            key: nanohd.if.hc.out[{#SNMPINDEX}]
+      - uuid: ba4d251d77c84e7d9a59fc9b58e72bd0
+        name: 'Interface {#IFNAME}: Traffic (32-bit fallback)'
+        graph_items:
+        - color: 199C0D
+          item:
+            host: Ubiquiti UniFi nanoHD by SNMP
+            key: nanohd.if.legacy.in[{#SNMPINDEX}]
+        - sortorder: '1'
+          color: F63100
+          item:
+            host: Ubiquiti UniFi nanoHD by SNMP
+            key: nanohd.if.legacy.out[{#SNMPINDEX}]
+      - uuid: 3ee2bbe0a7a14dc5a9aff4e7c6114daa
+        name: 'Interface {#IFNAME}: Errors and discards'
+        graph_items:
+        - color: 199C0D
+          item:
+            host: Ubiquiti UniFi nanoHD by SNMP
+            key: nanohd.if.in.errors[{#SNMPINDEX}]
+        - sortorder: '1'
+          color: F63100
+          item:
+            host: Ubiquiti UniFi nanoHD by SNMP
+            key: nanohd.if.out.errors[{#SNMPINDEX}]
+        - sortorder: '2'
+          color: 1A7BC5
+          item:
+            host: Ubiquiti UniFi nanoHD by SNMP
+            key: nanohd.if.in.discards[{#SNMPINDEX}]
+        - sortorder: '3'
+          color: 6C59DC
+          item:
+            host: Ubiquiti UniFi nanoHD by SNMP
+            key: nanohd.if.out.discards[{#SNMPINDEX}]
+      trigger_prototypes:
+      - uuid: 5ded8d9d6f8c403c941dd7843098ff41
+        expression: '{$NANOHD.IF.ALERT:"{#IFNAME}"}=1 and last(/Ubiquiti UniFi nanoHD by SNMP/nanohd.if.status[{#SNMPINDEX}])=2'
+        name: 'nanoHD: Interface {#IFNAME} is down'
+        priority: AVERAGE
+        description: Set the host-level context macro {$NANOHD.IF.ALERT:"<interface>"}=1 only for the intended physical
+          uplink.
+        tags:
+        - tag: scope
+          value: availability
+    - uuid: 51f9aa86b08a4bd78ecbc99380bf1234
+      name: UniFi radio discovery (optional firmware MIB)
+      type: SNMP_AGENT
+      snmp_oid: discovery[{#RADIONAME},1.3.6.1.4.1.41112.1.6.1.1.1.2]
+      key: nanohd.radio.discovery
+      delay: 1h
+      description: Optional radio discovery via the historical UBNT-UniFi-MIB. nanoHD has 2.4 GHz and 5 GHz radios;
+        whether these OIDs appear depends on firmware.
+      item_prototypes:
+      - uuid: 30fcedb7cded46c6bee69e25e5d0f2f6
+        name: 'Radio {#RADIONAME}: Radio mode / band'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.4.1.41112.1.6.1.1.1.3.{#SNMPINDEX}]
+        key: nanohd.radio.mode[{#SNMPINDEX}]
+        delay: 15m
+        value_type: CHAR
+        preprocessing:
+        - type: DISCARD_UNCHANGED_HEARTBEAT
+          parameters:
+          - 4h
+        tags:
+        - tag: component
+          value: radio
+      - uuid: beb381d008474ba58bb19321f3e2da09
+        name: 'Radio {#RADIONAME}: Total channel utilization'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.4.1.41112.1.6.1.1.1.6.{#SNMPINDEX}]
+        key: nanohd.radio.util.total[{#SNMPINDEX}]
+        delay: 2m
+        units: '%'
+        tags:
+        - tag: component
+          value: radio
+      - uuid: cf7abe92a44d4125af0b7f24a57c096e
+        name: 'Radio {#RADIONAME}: Self receive channel utilization'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.4.1.41112.1.6.1.1.1.7.{#SNMPINDEX}]
+        key: nanohd.radio.util.rx[{#SNMPINDEX}]
+        delay: 2m
+        units: '%'
+        tags:
+        - tag: component
+          value: radio
+      - uuid: f46cc9123473421f9a19b3e0cc923c46
+        name: 'Radio {#RADIONAME}: Self transmit channel utilization'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.4.1.41112.1.6.1.1.1.8.{#SNMPINDEX}]
+        key: nanohd.radio.util.tx[{#SNMPINDEX}]
+        delay: 2m
+        units: '%'
+        tags:
+        - tag: component
+          value: radio
+      - uuid: b4667c326102490199f49028d808fa4e
+        name: 'Radio {#RADIONAME}: Receive packets'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.4.1.41112.1.6.1.1.1.4.{#SNMPINDEX}]
+        key: nanohd.radio.rx.pps[{#SNMPINDEX}]
+        delay: 2m
+        units: pps
+        preprocessing:
+        - type: CHANGE_PER_SECOND
+        tags:
+        - tag: component
+          value: radio
+      - uuid: a2754dec772b4ca5afef98d142925830
+        name: 'Radio {#RADIONAME}: Transmit packets'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.4.1.41112.1.6.1.1.1.5.{#SNMPINDEX}]
+        key: nanohd.radio.tx.pps[{#SNMPINDEX}]
+        delay: 2m
+        units: pps
+        preprocessing:
+        - type: CHANGE_PER_SECOND
+        tags:
+        - tag: component
+          value: radio
+      graph_prototypes:
+      - uuid: ae70f19b1765449789ce9adbc1600a0b
+        name: 'Radio {#RADIONAME}: Channel utilization'
+        graph_items:
+        - color: 199C0D
+          item:
+            host: Ubiquiti UniFi nanoHD by SNMP
+            key: nanohd.radio.util.total[{#SNMPINDEX}]
+        - sortorder: '1'
+          color: F63100
+          item:
+            host: Ubiquiti UniFi nanoHD by SNMP
+            key: nanohd.radio.util.rx[{#SNMPINDEX}]
+        - sortorder: '2'
+          color: 1A7BC5
+          item:
+            host: Ubiquiti UniFi nanoHD by SNMP
+            key: nanohd.radio.util.tx[{#SNMPINDEX}]
+      - uuid: 7ca88728f81c4115a3ec35272212cab2
+        name: 'Radio {#RADIONAME}: Packets'
+        graph_items:
+        - color: 199C0D
+          item:
+            host: Ubiquiti UniFi nanoHD by SNMP
+            key: nanohd.radio.rx.pps[{#SNMPINDEX}]
+        - sortorder: '1'
+          color: F63100
+          item:
+            host: Ubiquiti UniFi nanoHD by SNMP
+            key: nanohd.radio.tx.pps[{#SNMPINDEX}]
+      trigger_prototypes:
+      - uuid: f7598b423e9a487880f071785d3cabcf
+        expression: avg(/Ubiquiti UniFi nanoHD by SNMP/nanohd.radio.util.total[{#SNMPINDEX}],10m)>{$NANOHD.RADIO.UTIL.WARN}
+        name: 'nanoHD: Radio {#RADIONAME} channel utilization is high'
+        priority: WARNING
+        description: Radio channel busy percentage exceeded configured threshold for ten minutes.
+        tags:
+        - tag: scope
+          value: performance
+    - uuid: 19ae152a28ae4ed88a2ef1239003b50b
+      name: UniFi SSID / virtual AP discovery (optional firmware MIB)
+      type: SNMP_AGENT
+      snmp_oid: discovery[{#VAPNAME},1.3.6.1.4.1.41112.1.6.1.2.1.7,{#SSID},1.3.6.1.4.1.41112.1.6.1.2.1.6]
+      key: nanohd.vap.discovery
+      delay: 1h
+      description: Optional discovery for SSID/BSSID interfaces via UBNT-UniFi-MIB. Firmware may not publish this
+        table; if absent, no clients/SSID items are created.
+      item_prototypes:
+      - uuid: 6aac2d28d6e24d9e8b599b621f4e7a77
+        name: 'SSID {#SSID} ({#VAPNAME}): Client stations'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.4.1.41112.1.6.1.2.1.8.{#SNMPINDEX}]
+        key: nanohd.vap.clients[{#SNMPINDEX}]
+        delay: 2m
+        tags:
+        - tag: component
+          value: wireless
+      - uuid: 0171527645844d8c808a587b895328f4
+        name: 'SSID {#SSID} ({#VAPNAME}): Channel'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.4.1.41112.1.6.1.2.1.4.{#SNMPINDEX}]
+        key: nanohd.vap.channel[{#SNMPINDEX}]
+        delay: 5m
+        tags:
+        - tag: component
+          value: wireless
+      - uuid: 9f75292d15ca4de9951e8ecef2cd0cc7
+        name: 'SSID {#SSID} ({#VAPNAME}): CCQ'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.4.1.41112.1.6.1.2.1.3.{#SNMPINDEX}]
+        key: nanohd.vap.ccq[{#SNMPINDEX}]
+        delay: 5m
+        units: '%'
+        tags:
+        - tag: component
+          value: wireless
+      - uuid: 27af67e5c6a54553a798d71223f85c38
+        name: 'SSID {#SSID} ({#VAPNAME}): Transmit power'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.4.1.41112.1.6.1.2.1.21.{#SNMPINDEX}]
+        key: nanohd.vap.tx.power[{#SNMPINDEX}]
+        delay: 5m
+        units: dBm
+        tags:
+        - tag: component
+          value: wireless
+      - uuid: 2394c899e53b4a28a5d13ef1d62976ab
+        name: 'SSID {#SSID} ({#VAPNAME}): Virtual AP up state'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.4.1.41112.1.6.1.2.1.22.{#SNMPINDEX}]
+        key: nanohd.vap.up[{#SNMPINDEX}]
+        delay: 5m
+        tags:
+        - tag: component
+          value: wireless
+        valuemap:
+          name: TruthValue (1=true, 2=false)
+      - uuid: ef404f6c3ee049d9abb8a5706b6fb476
+        name: 'SSID {#SSID} ({#VAPNAME}): Radio mapping'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.4.1.41112.1.6.1.2.1.9.{#SNMPINDEX}]
+        key: nanohd.vap.radio[{#SNMPINDEX}]
+        delay: 15m
+        value_type: CHAR
+        preprocessing:
+        - type: DISCARD_UNCHANGED_HEARTBEAT
+          parameters:
+          - 4h
+        tags:
+        - tag: component
+          value: wireless
+      - uuid: 7445f675d18a44e8a923a3878a4a1c23
+        name: 'SSID {#SSID} ({#VAPNAME}): Received traffic'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.4.1.41112.1.6.1.2.1.10.{#SNMPINDEX}]
+        key: nanohd.vap.rx.bps[{#SNMPINDEX}]
+        delay: 1m
+        units: bps
+        description: UBNT-UniFi-MIB Counter32; at high speeds can wrap between polls.
+        preprocessing:
+        - type: CHANGE_PER_SECOND
+        - type: MULTIPLIER
+          parameters:
+          - '8'
+        tags:
+        - tag: component
+          value: wireless
+      - uuid: 51103e5946c443c699f092da676d6d48
+        name: 'SSID {#SSID} ({#VAPNAME}): Transmitted traffic'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.4.1.41112.1.6.1.2.1.16.{#SNMPINDEX}]
+        key: nanohd.vap.tx.bps[{#SNMPINDEX}]
+        delay: 1m
+        units: bps
+        description: UBNT-UniFi-MIB Counter32; at high speeds can wrap between polls.
+        preprocessing:
+        - type: CHANGE_PER_SECOND
+        - type: MULTIPLIER
+          parameters:
+          - '8'
+        tags:
+        - tag: component
+          value: wireless
+      - uuid: f0139afe6be24f73ad967b8b3c8216d7
+        name: 'SSID {#SSID} ({#VAPNAME}): Received dropped frames'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.4.1.41112.1.6.1.2.1.12.{#SNMPINDEX}]
+        key: nanohd.vap.rx.dropped[{#SNMPINDEX}]
+        delay: 2m
+        units: pps
+        preprocessing:
+        - type: CHANGE_PER_SECOND
+        tags:
+        - tag: component
+          value: wireless
+      - uuid: ecf0c45fc4c2458abc6b2ba7b11557bf
+        name: 'SSID {#SSID} ({#VAPNAME}): Transmitted dropped frames'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.4.1.41112.1.6.1.2.1.17.{#SNMPINDEX}]
+        key: nanohd.vap.tx.dropped[{#SNMPINDEX}]
+        delay: 2m
+        units: pps
+        preprocessing:
+        - type: CHANGE_PER_SECOND
+        tags:
+        - tag: component
+          value: wireless
+      - uuid: 1960e93496984458a7b6dea46d9b31bb
+        name: 'SSID {#SSID} ({#VAPNAME}): Transmitted retries'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.4.1.41112.1.6.1.2.1.20.{#SNMPINDEX}]
+        key: nanohd.vap.tx.retries[{#SNMPINDEX}]
+        delay: 2m
+        units: pps
+        preprocessing:
+        - type: CHANGE_PER_SECOND
+        tags:
+        - tag: component
+          value: wireless
+      graph_prototypes:
+      - uuid: 648b70038a0a48cb9cdaadb2d27a86d1
+        name: 'SSID {#SSID} ({#VAPNAME}): Connected clients'
+        graph_items:
+        - color: 199C0D
+          item:
+            host: Ubiquiti UniFi nanoHD by SNMP
+            key: nanohd.vap.clients[{#SNMPINDEX}]
+      - uuid: f4f6605ccb0f4343870a74724073d242
+        name: 'SSID {#SSID} ({#VAPNAME}): Traffic (32-bit counters)'
+        graph_items:
+        - color: 199C0D
+          item:
+            host: Ubiquiti UniFi nanoHD by SNMP
+            key: nanohd.vap.rx.bps[{#SNMPINDEX}]
+        - sortorder: '1'
+          color: F63100
+          item:
+            host: Ubiquiti UniFi nanoHD by SNMP
+            key: nanohd.vap.tx.bps[{#SNMPINDEX}]
+      - uuid: b95e9ab2969d4b2fa42e9e7491adfd8f
+        name: 'SSID {#SSID} ({#VAPNAME}): Dropped and retried frames'
+        graph_items:
+        - color: 199C0D
+          item:
+            host: Ubiquiti UniFi nanoHD by SNMP
+            key: nanohd.vap.rx.dropped[{#SNMPINDEX}]
+        - sortorder: '1'
+          color: F63100
+          item:
+            host: Ubiquiti UniFi nanoHD by SNMP
+            key: nanohd.vap.tx.dropped[{#SNMPINDEX}]
+        - sortorder: '2'
+          color: 1A7BC5
+          item:
+            host: Ubiquiti UniFi nanoHD by SNMP
+            key: nanohd.vap.tx.retries[{#SNMPINDEX}]
+    tags:
+    - tag: class
+      value: network
+    - tag: target
+      value: unifi
+    - tag: model
+      value: nanoHD
+    macros:
+    - macro: '{$ICMP.LOSS.WARN}'
+      value: '20'
+      description: Packet-loss percent threshold
+    - macro: '{$ICMP.RTT.WARN}'
+      value: '0.15'
+      description: Round-trip time threshold (seconds)
+    - macro: '{$NANOHD.IF.MATCHES}'
+      value: .*
+      description: Regex filter for interface descriptions
+    - macro: '{$NANOHD.IF.ALERT}'
+      value: '0'
+      description: Turn on down alerts per interface by host-level contextual macro.
+    - macro: '{$NANOHD.IF.ALERT:"eth0"}'
+      value: '1'
+      description: Enable link-down alert for the common physical Ethernet interface eth0. Confirm actual interface
+        names on your nanoHD and change the context macro if needed.
+    - macro: '{$NANOHD.RADIO.UTIL.WARN}'
+      value: '85'
+      description: 10-minute average radio utilization threshold (%)
+    valuemaps:
+    - uuid: 59cffb3ec07f43b1881c41eb3a811cc3
+      name: TruthValue (1=true, 2=false)
+      mappings:
+      - value: '1'
+        newvalue: 'True'
+      - value: '2'
+        newvalue: 'False'
+    - uuid: 24fb567377a047eea19bebc2a3b54f07
+      name: IF-MIB ifOperStatus
+      mappings:
+      - value: '1'
+        newvalue: up
+      - value: '2'
+        newvalue: down
+      - value: '3'
+        newvalue: testing
+      - value: '4'
+        newvalue: unknown
+      - value: '5'
+        newvalue: dormant
+      - value: '6'
+        newvalue: notPresent
+      - value: '7'
+        newvalue: lowerLayerDown
+    - uuid: c13d5856cc464e2a9aadc7ea51477649
+      name: IF-MIB ifAdminStatus
+      mappings:
+      - value: '1'
+        newvalue: up
+      - value: '2'
+        newvalue: down
+      - value: '3'
+        newvalue: testing
+  graphs:
+  - uuid: bea861b1c7494c17ae8cc2d6388abd83
+    name: 'nanoHD: ICMP latency'
+    graph_items:
+    - color: 199C0D
+      item:
+        host: Ubiquiti UniFi nanoHD by SNMP
+        key: icmppingsec
+  - uuid: 3458040e79b5433da949db4a585a6d05
+    name: 'nanoHD: ICMP packet loss'
+    graph_items:
+    - color: 199C0D
+      item:
+        host: Ubiquiti UniFi nanoHD by SNMP
+        key: icmppingloss
+  - uuid: be30a765d41e4a6a9955561e6fbfbcbd
+    name: 'nanoHD: SNMP agent uptime'
+    graph_items:
+    - color: 199C0D
+      item:
+        host: Ubiquiti UniFi nanoHD by SNMP
+        key: nanohd.system.uptime
