@@ -1,0 +1,607 @@
+zabbix_export:
+  version: '7.0'
+  template_groups:
+  - uuid: 36bff6c29af64692839d077febfc7079
+    name: Templates/Network devices
+  templates:
+  - uuid: 617568e6798945c9b00f6fb69316c352
+    template: Ubiquiti PowerBeam 5AC 620 by SNMP
+    name: Ubiquiti PowerBeam 5AC 620 by SNMP
+    description: 'Zabbix 7.0.30 template for Ubiquiti PowerBeam 5AC 620 (PBE-5AC-620). Role: PtP/CPE. SNMP assessment: Yes.
+      Ubiquiti states all airMAX devices support SNMPv1 read access; UBNT-AirMAX-MIB used for wireless metrics. Private airMAX
+      MIB support can differ by airOS generation; unsupported individual OIDs will become unsupported items, not block import.
+      SNMP credentials/interface are configured at the Zabbix host, not in this template.'
+    groups:
+    - name: Templates/Network devices
+    items:
+    - uuid: c29df9782e4947d8841529d27216327b
+      name: ICMP ping
+      type: SIMPLE
+      key: icmpping
+      delay: 1m
+      history: 7d
+      tags:
+      - tag: component
+        value: health
+      triggers:
+      - uuid: df0b1182d1934318bebf92802d8084e0
+        expression: max(/Ubiquiti PowerBeam 5AC 620 by SNMP/icmpping,#3)=0
+        name: 'PowerBeam 5AC 620: Unavailable by ICMP ping'
+        priority: HIGH
+        description: Three consecutive ICMP checks failed.
+        tags:
+        - tag: scope
+          value: availability
+    - uuid: 240d5fda034241b29398dfa8a18f4f4e
+      name: ICMP packet loss
+      type: SIMPLE
+      key: icmppingloss
+      delay: 1m
+      value_type: FLOAT
+      units: '%'
+      tags:
+      - tag: component
+        value: health
+      triggers:
+      - uuid: 6f3031effc5449e991a53d9aec95a68a
+        expression: min(/Ubiquiti PowerBeam 5AC 620 by SNMP/icmppingloss,5m)>{$ICMP.LOSS.WARN} and min(/Ubiquiti PowerBeam
+          5AC 620 by SNMP/icmppingloss,5m)<100
+        name: 'PowerBeam 5AC 620: High ICMP packet loss'
+        priority: WARNING
+        description: Packet loss exceeded the warning threshold for 5 minutes.
+        tags:
+        - tag: scope
+          value: performance
+    - uuid: 4f1f2b0a60654552b151fcf98ba6c8ff
+      name: ICMP response time
+      type: SIMPLE
+      key: icmppingsec
+      delay: 1m
+      value_type: FLOAT
+      units: s
+      tags:
+      - tag: component
+        value: health
+      triggers:
+      - uuid: 15e5d5875d88443a9cc0a0bea4833781
+        expression: avg(/Ubiquiti PowerBeam 5AC 620 by SNMP/icmppingsec,5m)>{$ICMP.RTT.WARN}
+        name: 'PowerBeam 5AC 620: High ICMP response time'
+        priority: WARNING
+        description: Average round-trip time exceeded threshold for 5 minutes.
+        tags:
+        - tag: scope
+          value: performance
+    - uuid: 682e433c1fd64215a36e3c4a2bb5fdb6
+      name: SNMP network uptime
+      type: SNMP_AGENT
+      snmp_oid: get[1.3.6.1.2.1.1.3.0]
+      key: uisp.system.uptime
+      delay: 1m
+      units: uptime
+      description: sysUpTime (TimeTicks / 100); measures SNMP agent uptime, not guaranteed hardware uptime.
+      preprocessing:
+      - type: MULTIPLIER
+        parameters:
+        - '0.01'
+      tags:
+      - tag: component
+        value: health
+      triggers:
+      - uuid: 12589ed08e4a4a69906c0d3a5745a8d2
+        expression: nodata(/Ubiquiti PowerBeam 5AC 620 by SNMP/uisp.system.uptime,15m)=1 and last(/Ubiquiti PowerBeam 5AC
+          620 by SNMP/icmpping)=1
+        name: 'PowerBeam 5AC 620: SNMP stops responding while ping succeeds'
+        priority: AVERAGE
+        description: Device replies to ping but sysUpTime polling has had no data for 15 minutes; check SNMP credentials/firewall.
+        tags:
+        - tag: scope
+          value: availability
+    - uuid: 9d01bf44db6a4e50a9dc4cc8fa1c5d6b
+      name: SNMP system description
+      type: SNMP_AGENT
+      snmp_oid: get[1.3.6.1.2.1.1.1.0]
+      key: uisp.system.description
+      delay: 1h
+      value_type: CHAR
+      preprocessing:
+      - type: DISCARD_UNCHANGED_HEARTBEAT
+        parameters:
+        - 12h
+      tags:
+      - tag: component
+        value: inventory
+    - uuid: 027b6c11023e4208a407df1f6bc5441f
+      name: SNMP system object ID
+      type: SNMP_AGENT
+      snmp_oid: get[1.3.6.1.2.1.1.2.0]
+      key: uisp.system.objectid
+      delay: 1h
+      value_type: CHAR
+      preprocessing:
+      - type: DISCARD_UNCHANGED_HEARTBEAT
+        parameters:
+        - 12h
+      tags:
+      - tag: component
+        value: inventory
+    - uuid: c3d8ebc2c1f14adab4d8e626999110cc
+      name: SNMP system name
+      type: SNMP_AGENT
+      snmp_oid: get[1.3.6.1.2.1.1.5.0]
+      key: uisp.system.name
+      delay: 1h
+      value_type: CHAR
+      preprocessing:
+      - type: DISCARD_UNCHANGED_HEARTBEAT
+        parameters:
+        - 12h
+      tags:
+      - tag: component
+        value: inventory
+    - uuid: b5364e83f8b347b09d63f53896970c2a
+      name: SNMP system location
+      type: SNMP_AGENT
+      snmp_oid: get[1.3.6.1.2.1.1.6.0]
+      key: uisp.system.location
+      delay: 1h
+      value_type: CHAR
+      preprocessing:
+      - type: DISCARD_UNCHANGED_HEARTBEAT
+        parameters:
+        - 12h
+      tags:
+      - tag: component
+        value: inventory
+    - uuid: ee32c7a0432744b28ee1602910fd72c6
+      name: SNMP system contact
+      type: SNMP_AGENT
+      snmp_oid: get[1.3.6.1.2.1.1.4.0]
+      key: uisp.system.contact
+      delay: 1h
+      value_type: CHAR
+      preprocessing:
+      - type: DISCARD_UNCHANGED_HEARTBEAT
+        parameters:
+        - 12h
+      tags:
+      - tag: component
+        value: inventory
+    discovery_rules:
+    - uuid: e4f9fa364f0642e59044602e20a116e0
+      name: Network interface discovery (IF-MIB)
+      type: SNMP_AGENT
+      snmp_oid: discovery[{#IFNAME},1.3.6.1.2.1.2.2.1.2,{#IFADMIN},1.3.6.1.2.1.2.2.1.7]
+      key: uisp.if.discovery
+      delay: 1h
+      description: Standard IF-MIB/IF-X-MIB discovery. High-capacity 64-bit counters may be unsupported on older devices;
+        classic 32-bit counters are included as fallback.
+      filter:
+        conditions:
+        - macro: '{#IFNAME}'
+          value: '{$UISP.IF.MATCHES}'
+      item_prototypes:
+      - uuid: 498f97d35b3943f1a68fe4890d39d909
+        name: 'Interface {#IFNAME}: Operational status'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.2.1.2.2.1.8.{#SNMPINDEX}]
+        key: uisp.if.status[{#SNMPINDEX}]
+        delay: 2m
+        valuemap:
+          name: IF-MIB ifOperStatus
+        tags:
+        - tag: component
+          value: network
+      - uuid: a15542808a194df9b75ccbe2e2b0e02c
+        name: 'Interface {#IFNAME}: Admin status'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.2.1.2.2.1.7.{#SNMPINDEX}]
+        key: uisp.if.admin[{#SNMPINDEX}]
+        delay: 5m
+        valuemap:
+          name: IF-MIB ifAdminStatus
+        tags:
+        - tag: component
+          value: network
+      - uuid: 649f1fe8e90447a3902e1c4d0532ae73
+        name: 'Interface {#IFNAME}: Incoming traffic (64-bit)'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.2.1.31.1.1.1.6.{#SNMPINDEX}]
+        key: uisp.if.hc.in[{#SNMPINDEX}]
+        delay: 1m
+        units: bps
+        description: 64-bit IF-MIB high-capacity octet counter, suitable for multi-gigabit uplinks.
+        preprocessing:
+        - type: CHANGE_PER_SECOND
+        - type: MULTIPLIER
+          parameters:
+          - '8'
+        tags:
+        - tag: component
+          value: traffic
+      - uuid: 87b9644307bb42bcbd25c401db337701
+        name: 'Interface {#IFNAME}: Outgoing traffic (64-bit)'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.2.1.31.1.1.1.10.{#SNMPINDEX}]
+        key: uisp.if.hc.out[{#SNMPINDEX}]
+        delay: 1m
+        units: bps
+        description: 64-bit IF-MIB high-capacity octet counter, suitable for multi-gigabit uplinks.
+        preprocessing:
+        - type: CHANGE_PER_SECOND
+        - type: MULTIPLIER
+          parameters:
+          - '8'
+        tags:
+        - tag: component
+          value: traffic
+      - uuid: 30ed635ea213417bbed054813339596f
+        name: 'Interface {#IFNAME}: Incoming traffic (32-bit fallback)'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.2.1.2.2.1.10.{#SNMPINDEX}]
+        key: uisp.if.legacy.in[{#SNMPINDEX}]
+        delay: 1m
+        units: bps
+        description: Counter converted from bytes/s to bits/s. 32-bit counters may wrap at high throughput.
+        preprocessing:
+        - type: CHANGE_PER_SECOND
+        - type: MULTIPLIER
+          parameters:
+          - '8'
+        tags:
+        - tag: component
+          value: traffic
+      - uuid: 6ebecb64949248bfaea94a6292e1f71e
+        name: 'Interface {#IFNAME}: Outgoing traffic (32-bit fallback)'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.2.1.2.2.1.16.{#SNMPINDEX}]
+        key: uisp.if.legacy.out[{#SNMPINDEX}]
+        delay: 1m
+        units: bps
+        description: Counter converted from bytes/s to bits/s. 32-bit counters may wrap at high throughput.
+        preprocessing:
+        - type: CHANGE_PER_SECOND
+        - type: MULTIPLIER
+          parameters:
+          - '8'
+        tags:
+        - tag: component
+          value: traffic
+      - uuid: d64d70a8e1494a3f8fbec3148c48b9bc
+        name: 'Interface {#IFNAME}: Input errors'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.2.1.2.2.1.14.{#SNMPINDEX}]
+        key: uisp.if.in.errors[{#SNMPINDEX}]
+        delay: 2m
+        units: pps
+        preprocessing:
+        - type: CHANGE_PER_SECOND
+        tags:
+        - tag: component
+          value: errors
+      - uuid: 4790155fefef46d297abd6d71a64f390
+        name: 'Interface {#IFNAME}: Output errors'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.2.1.2.2.1.20.{#SNMPINDEX}]
+        key: uisp.if.out.errors[{#SNMPINDEX}]
+        delay: 2m
+        units: pps
+        preprocessing:
+        - type: CHANGE_PER_SECOND
+        tags:
+        - tag: component
+          value: errors
+      - uuid: 8c6886c6ede44ae097e8b812ccb27f86
+        name: 'Interface {#IFNAME}: Input discards'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.2.1.2.2.1.13.{#SNMPINDEX}]
+        key: uisp.if.in.discards[{#SNMPINDEX}]
+        delay: 2m
+        units: pps
+        preprocessing:
+        - type: CHANGE_PER_SECOND
+        tags:
+        - tag: component
+          value: errors
+      - uuid: 9de12f570af84d68bbd818f6641525be
+        name: 'Interface {#IFNAME}: Output discards'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.2.1.2.2.1.19.{#SNMPINDEX}]
+        key: uisp.if.out.discards[{#SNMPINDEX}]
+        delay: 2m
+        units: pps
+        preprocessing:
+        - type: CHANGE_PER_SECOND
+        tags:
+        - tag: component
+          value: errors
+      graph_prototypes:
+      - uuid: e437595f45a74dbdbabcd7787160a5c7
+        name: 'Interface {#IFNAME}: Traffic (64-bit)'
+        graph_items:
+        - color: 199C0D
+          item:
+            host: Ubiquiti PowerBeam 5AC 620 by SNMP
+            key: uisp.if.hc.in[{#SNMPINDEX}]
+        - sortorder: '1'
+          color: F63100
+          item:
+            host: Ubiquiti PowerBeam 5AC 620 by SNMP
+            key: uisp.if.hc.out[{#SNMPINDEX}]
+      - uuid: 1961e53ee9ae464aa29ad512934eab11
+        name: 'Interface {#IFNAME}: Traffic (32-bit fallback)'
+        graph_items:
+        - color: 199C0D
+          item:
+            host: Ubiquiti PowerBeam 5AC 620 by SNMP
+            key: uisp.if.legacy.in[{#SNMPINDEX}]
+        - sortorder: '1'
+          color: F63100
+          item:
+            host: Ubiquiti PowerBeam 5AC 620 by SNMP
+            key: uisp.if.legacy.out[{#SNMPINDEX}]
+      - uuid: ccc12e028fd845ac84ce036f8f5977b9
+        name: 'Interface {#IFNAME}: Errors and discards'
+        graph_items:
+        - color: 199C0D
+          item:
+            host: Ubiquiti PowerBeam 5AC 620 by SNMP
+            key: uisp.if.in.errors[{#SNMPINDEX}]
+        - sortorder: '1'
+          color: F63100
+          item:
+            host: Ubiquiti PowerBeam 5AC 620 by SNMP
+            key: uisp.if.out.errors[{#SNMPINDEX}]
+        - sortorder: '2'
+          color: 1A7BC5
+          item:
+            host: Ubiquiti PowerBeam 5AC 620 by SNMP
+            key: uisp.if.in.discards[{#SNMPINDEX}]
+        - sortorder: '3'
+          color: 6C59DC
+          item:
+            host: Ubiquiti PowerBeam 5AC 620 by SNMP
+            key: uisp.if.out.discards[{#SNMPINDEX}]
+      trigger_prototypes:
+      - uuid: f00ffeaef4e4419ba77f175b0011e23d
+        expression: '{$UISP.IF.ALERT:"{#IFNAME}"}=1 and last(/Ubiquiti PowerBeam 5AC 620 by SNMP/uisp.if.status[{#SNMPINDEX}])=2'
+        name: 'PowerBeam 5AC 620: Interface {#IFNAME} is down'
+        priority: AVERAGE
+        description: Opt-in interface alert. Set contextual {$UISP.IF.ALERT:"<interface>"}=1 for the intended physical uplink
+          only.
+        tags:
+        - tag: scope
+          value: availability
+    - uuid: f1c1e2c0647b4490a7370f1d56f432bc
+      name: airMAX wireless interface discovery
+      type: SNMP_AGENT
+      snmp_oid: discovery[{#SSID},1.3.6.1.4.1.41112.1.4.5.1.2]
+      key: uisp.airmax.wireless.discovery
+      delay: 10m
+      description: UBNT-AirMAX-MIB wireless status table. Ubiquiti documents ubntWlStatSignal as .1.3.6.1.4.1.41112.1.4.5.1.5.
+      item_prototypes:
+      - uuid: 94d7221f666a4c859cf12c59abc12df4
+        name: 'airMAX {#SSID}: Signal'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.4.1.41112.1.4.5.1.5.{#SNMPINDEX}]
+        key: uisp.airmax.signal[{#SNMPINDEX}]
+        delay: 2m
+        tags:
+        - tag: component
+          value: wireless
+        units: dBm
+      - uuid: 47fa24d99e83469ba0837e02d74b18e4
+        name: 'airMAX {#SSID}: RSSI'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.4.1.41112.1.4.5.1.6.{#SNMPINDEX}]
+        key: uisp.airmax.rssi[{#SNMPINDEX}]
+        delay: 2m
+        tags:
+        - tag: component
+          value: wireless
+        units: dBm
+      - uuid: 10375ebd013b433493fdd2552cc01413
+        name: 'airMAX {#SSID}: CCQ'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.4.1.41112.1.4.5.1.7.{#SNMPINDEX}]
+        key: uisp.airmax.ccq[{#SNMPINDEX}]
+        delay: 2m
+        tags:
+        - tag: component
+          value: wireless
+        units: '%'
+      - uuid: c67325b086d843868221a14b8377b8c3
+        name: 'airMAX {#SSID}: Noise floor'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.4.1.41112.1.4.5.1.8.{#SNMPINDEX}]
+        key: uisp.airmax.noise[{#SNMPINDEX}]
+        delay: 2m
+        tags:
+        - tag: component
+          value: wireless
+        units: dBm
+      - uuid: fce6f587bf9d41999d1b1c3ff8ae7a59
+        name: 'airMAX {#SSID}: TX rate'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.4.1.41112.1.4.5.1.9.{#SNMPINDEX}]
+        key: uisp.airmax.txrate[{#SNMPINDEX}]
+        delay: 2m
+        tags:
+        - tag: component
+          value: wireless
+      - uuid: 2a82127aa5b34574b40d1c831bdc2bc5
+        name: 'airMAX {#SSID}: RX rate'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.4.1.41112.1.4.5.1.10.{#SNMPINDEX}]
+        key: uisp.airmax.rxrate[{#SNMPINDEX}]
+        delay: 2m
+        tags:
+        - tag: component
+          value: wireless
+      - uuid: 7e410daf37fc4795a21d9af20afff052
+        name: 'airMAX {#SSID}: Station count'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.4.1.41112.1.4.5.1.15.{#SNMPINDEX}]
+        key: uisp.airmax.stations[{#SNMPINDEX}]
+        delay: 2m
+        tags:
+        - tag: component
+          value: wireless
+      graph_prototypes:
+      - uuid: 45ad172bd7194e30be44261965e91d40
+        name: 'airMAX {#SSID}: RF signal'
+        graph_items:
+        - color: 199C0D
+          item:
+            host: Ubiquiti PowerBeam 5AC 620 by SNMP
+            key: uisp.airmax.signal[{#SNMPINDEX}]
+        - sortorder: '1'
+          color: F63100
+          item:
+            host: Ubiquiti PowerBeam 5AC 620 by SNMP
+            key: uisp.airmax.noise[{#SNMPINDEX}]
+      - uuid: 518ad7c870c547b0b802be863a935bcc
+        name: 'airMAX {#SSID}: Link rates'
+        graph_items:
+        - color: 199C0D
+          item:
+            host: Ubiquiti PowerBeam 5AC 620 by SNMP
+            key: uisp.airmax.txrate[{#SNMPINDEX}]
+        - sortorder: '1'
+          color: F63100
+          item:
+            host: Ubiquiti PowerBeam 5AC 620 by SNMP
+            key: uisp.airmax.rxrate[{#SNMPINDEX}]
+    - uuid: d3f8c54479184cb69492bf8567b194d9
+      name: airMAX quality discovery
+      type: SNMP_AGENT
+      snmp_oid: discovery[{#AMQ},1.3.6.1.4.1.41112.1.4.6.1.3]
+      key: uisp.airmax.quality.discovery
+      delay: 10m
+      item_prototypes:
+      - uuid: db6db0401e4f443c87a1fc7ce3ce38fe
+        name: airMAX quality
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.4.1.41112.1.4.6.1.3.{#SNMPINDEX}]
+        key: uisp.airmax.quality[{#SNMPINDEX}]
+        delay: 2m
+        tags:
+        - tag: component
+          value: wireless
+        units: '%'
+      - uuid: 0f580febcb7a4f9cba15c0c8f77d636a
+        name: airMAX capacity
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.4.1.41112.1.4.6.1.4.{#SNMPINDEX}]
+        key: uisp.airmax.capacity[{#SNMPINDEX}]
+        delay: 2m
+        tags:
+        - tag: component
+          value: wireless
+        units: '%'
+      - uuid: 15614518618444b6992121e46675febe
+        name: airMAX airtime
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.4.1.41112.1.4.6.1.7.{#SNMPINDEX}]
+        key: uisp.airmax.airtime[{#SNMPINDEX}]
+        delay: 2m
+        tags:
+        - tag: component
+          value: wireless
+        units: '%'
+        preprocessing:
+        - type: MULTIPLIER
+          parameters:
+          - '0.1'
+      graph_prototypes:
+      - uuid: c45ea342741c4724b47d380c6c2048d9
+        name: airMAX quality / capacity
+        graph_items:
+        - color: 199C0D
+          item:
+            host: Ubiquiti PowerBeam 5AC 620 by SNMP
+            key: uisp.airmax.quality[{#SNMPINDEX}]
+        - sortorder: '1'
+          color: F63100
+          item:
+            host: Ubiquiti PowerBeam 5AC 620 by SNMP
+            key: uisp.airmax.capacity[{#SNMPINDEX}]
+        - sortorder: '2'
+          color: 1A7BC5
+          item:
+            host: Ubiquiti PowerBeam 5AC 620 by SNMP
+            key: uisp.airmax.airtime[{#SNMPINDEX}]
+    tags:
+    - tag: vendor
+      value: Ubiquiti
+    - tag: family
+      value: airMAX
+    - tag: model
+      value: PBE-5AC-620
+    - tag: role
+      value: PtP/CPE
+    macros:
+    - macro: '{$ICMP.LOSS.WARN}'
+      value: '20'
+      description: Packet-loss percent threshold
+    - macro: '{$ICMP.RTT.WARN}'
+      value: '0.15'
+      description: Round-trip time threshold (seconds)
+    - macro: '{$UISP.IF.MATCHES}'
+      value: .*
+      description: Regex filter for interface descriptions
+    - macro: '{$UISP.IF.ALERT}'
+      value: '0'
+      description: Global interface-down alert is disabled. Use contextual {$UISP.IF.ALERT:"<physical-interface>"}=1 to enable
+        only for intended ports.
+    - macro: '{$UISP.RF.ALERT}'
+      value: '0'
+      description: Enable RF-link-down trigger only after confirming the private MIB/profile works on this device/firmware.
+    valuemaps:
+    - uuid: d6322c854e4f47aeaa66b5939264d35a
+      name: IF-MIB ifOperStatus
+      mappings:
+      - value: '1'
+        newvalue: up
+      - value: '2'
+        newvalue: down
+      - value: '3'
+        newvalue: testing
+      - value: '4'
+        newvalue: unknown
+      - value: '5'
+        newvalue: dormant
+      - value: '6'
+        newvalue: notPresent
+      - value: '7'
+        newvalue: lowerLayerDown
+    - uuid: da626fb1ddde4e0794eb4fe880464354
+      name: IF-MIB ifAdminStatus
+      mappings:
+      - value: '1'
+        newvalue: up
+      - value: '2'
+        newvalue: down
+      - value: '3'
+        newvalue: testing
+  graphs:
+  - uuid: af9a658965964b30a2bb528395678726
+    name: 'PowerBeam 5AC 620: ICMP latency'
+    graph_items:
+    - color: 199C0D
+      item:
+        host: Ubiquiti PowerBeam 5AC 620 by SNMP
+        key: icmppingsec
+  - uuid: 682dda4b77434ce5805ab34c9c5c0cda
+    name: 'PowerBeam 5AC 620: ICMP packet loss'
+    graph_items:
+    - color: 199C0D
+      item:
+        host: Ubiquiti PowerBeam 5AC 620 by SNMP
+        key: icmppingloss
+  - uuid: fb8a60b401d643cb844b8fcc474a2298
+    name: 'PowerBeam 5AC 620: SNMP agent uptime'
+    graph_items:
+    - color: 199C0D
+      item:
+        host: Ubiquiti PowerBeam 5AC 620 by SNMP
+        key: uisp.system.uptime

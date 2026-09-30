@@ -1,0 +1,607 @@
+zabbix_export:
+  version: '7.0'
+  template_groups:
+  - uuid: 36bff6c29af64692839d077febfc7079
+    name: Templates/Network devices
+  templates:
+  - uuid: cc6ec07bf366415e815946fa7c4cac8e
+    template: Ubiquiti Rocket Prism 5AC by SNMP
+    name: Ubiquiti Rocket Prism 5AC by SNMP
+    description: 'Zabbix 7.0.30 template for Ubiquiti Rocket Prism 5AC (RP-5AC-Gen2). Role: PtP/PtMP base station. SNMP assessment:
+      Yes. Ubiquiti states all airMAX devices support SNMPv1 read access; UBNT-AirMAX-MIB used for wireless metrics. Private
+      airMAX MIB support can differ by airOS generation; unsupported individual OIDs will become unsupported items, not block
+      import. SNMP credentials/interface are configured at the Zabbix host, not in this template.'
+    groups:
+    - name: Templates/Network devices
+    items:
+    - uuid: 8f4ea936014b4022b7fc551d2077997a
+      name: ICMP ping
+      type: SIMPLE
+      key: icmpping
+      delay: 1m
+      history: 7d
+      tags:
+      - tag: component
+        value: health
+      triggers:
+      - uuid: 7c3ec31fd1334995bd5ef1a3ffac3470
+        expression: max(/Ubiquiti Rocket Prism 5AC by SNMP/icmpping,#3)=0
+        name: 'Rocket Prism 5AC: Unavailable by ICMP ping'
+        priority: HIGH
+        description: Three consecutive ICMP checks failed.
+        tags:
+        - tag: scope
+          value: availability
+    - uuid: 2634d9a456d646ef82be7d2df5cf1f14
+      name: ICMP packet loss
+      type: SIMPLE
+      key: icmppingloss
+      delay: 1m
+      value_type: FLOAT
+      units: '%'
+      tags:
+      - tag: component
+        value: health
+      triggers:
+      - uuid: 18d51a04810645b18f8ec09222fc34f4
+        expression: min(/Ubiquiti Rocket Prism 5AC by SNMP/icmppingloss,5m)>{$ICMP.LOSS.WARN} and min(/Ubiquiti Rocket Prism
+          5AC by SNMP/icmppingloss,5m)<100
+        name: 'Rocket Prism 5AC: High ICMP packet loss'
+        priority: WARNING
+        description: Packet loss exceeded the warning threshold for 5 minutes.
+        tags:
+        - tag: scope
+          value: performance
+    - uuid: 556d957f92cf4889a5b302f56b94eab2
+      name: ICMP response time
+      type: SIMPLE
+      key: icmppingsec
+      delay: 1m
+      value_type: FLOAT
+      units: s
+      tags:
+      - tag: component
+        value: health
+      triggers:
+      - uuid: 45e1887ce3184f409c4d1b42394c4421
+        expression: avg(/Ubiquiti Rocket Prism 5AC by SNMP/icmppingsec,5m)>{$ICMP.RTT.WARN}
+        name: 'Rocket Prism 5AC: High ICMP response time'
+        priority: WARNING
+        description: Average round-trip time exceeded threshold for 5 minutes.
+        tags:
+        - tag: scope
+          value: performance
+    - uuid: caf9dfbd675a47f2b661ee3bbcc520c2
+      name: SNMP network uptime
+      type: SNMP_AGENT
+      snmp_oid: get[1.3.6.1.2.1.1.3.0]
+      key: uisp.system.uptime
+      delay: 1m
+      units: uptime
+      description: sysUpTime (TimeTicks / 100); measures SNMP agent uptime, not guaranteed hardware uptime.
+      preprocessing:
+      - type: MULTIPLIER
+        parameters:
+        - '0.01'
+      tags:
+      - tag: component
+        value: health
+      triggers:
+      - uuid: 0152c2f5b5c5462baf6505b86ed5a3ff
+        expression: nodata(/Ubiquiti Rocket Prism 5AC by SNMP/uisp.system.uptime,15m)=1 and last(/Ubiquiti Rocket Prism 5AC
+          by SNMP/icmpping)=1
+        name: 'Rocket Prism 5AC: SNMP stops responding while ping succeeds'
+        priority: AVERAGE
+        description: Device replies to ping but sysUpTime polling has had no data for 15 minutes; check SNMP credentials/firewall.
+        tags:
+        - tag: scope
+          value: availability
+    - uuid: 44210b7936864a97baf9d001affebc39
+      name: SNMP system description
+      type: SNMP_AGENT
+      snmp_oid: get[1.3.6.1.2.1.1.1.0]
+      key: uisp.system.description
+      delay: 1h
+      value_type: CHAR
+      preprocessing:
+      - type: DISCARD_UNCHANGED_HEARTBEAT
+        parameters:
+        - 12h
+      tags:
+      - tag: component
+        value: inventory
+    - uuid: fa5eaa09caba4232af7415d5b45a0a73
+      name: SNMP system object ID
+      type: SNMP_AGENT
+      snmp_oid: get[1.3.6.1.2.1.1.2.0]
+      key: uisp.system.objectid
+      delay: 1h
+      value_type: CHAR
+      preprocessing:
+      - type: DISCARD_UNCHANGED_HEARTBEAT
+        parameters:
+        - 12h
+      tags:
+      - tag: component
+        value: inventory
+    - uuid: fdaa297df56042c5b9ba5a7f7041f640
+      name: SNMP system name
+      type: SNMP_AGENT
+      snmp_oid: get[1.3.6.1.2.1.1.5.0]
+      key: uisp.system.name
+      delay: 1h
+      value_type: CHAR
+      preprocessing:
+      - type: DISCARD_UNCHANGED_HEARTBEAT
+        parameters:
+        - 12h
+      tags:
+      - tag: component
+        value: inventory
+    - uuid: a0f65301987844dab6d347baf0b9cd07
+      name: SNMP system location
+      type: SNMP_AGENT
+      snmp_oid: get[1.3.6.1.2.1.1.6.0]
+      key: uisp.system.location
+      delay: 1h
+      value_type: CHAR
+      preprocessing:
+      - type: DISCARD_UNCHANGED_HEARTBEAT
+        parameters:
+        - 12h
+      tags:
+      - tag: component
+        value: inventory
+    - uuid: 7f87b01f8c5f46d4ba1cc3cacd1e941a
+      name: SNMP system contact
+      type: SNMP_AGENT
+      snmp_oid: get[1.3.6.1.2.1.1.4.0]
+      key: uisp.system.contact
+      delay: 1h
+      value_type: CHAR
+      preprocessing:
+      - type: DISCARD_UNCHANGED_HEARTBEAT
+        parameters:
+        - 12h
+      tags:
+      - tag: component
+        value: inventory
+    discovery_rules:
+    - uuid: cca7c9e785f84c46ac921c4db8aadf82
+      name: Network interface discovery (IF-MIB)
+      type: SNMP_AGENT
+      snmp_oid: discovery[{#IFNAME},1.3.6.1.2.1.2.2.1.2,{#IFADMIN},1.3.6.1.2.1.2.2.1.7]
+      key: uisp.if.discovery
+      delay: 1h
+      description: Standard IF-MIB/IF-X-MIB discovery. High-capacity 64-bit counters may be unsupported on older devices;
+        classic 32-bit counters are included as fallback.
+      filter:
+        conditions:
+        - macro: '{#IFNAME}'
+          value: '{$UISP.IF.MATCHES}'
+      item_prototypes:
+      - uuid: 9726762feae14d8c8789b6ee26999fa4
+        name: 'Interface {#IFNAME}: Operational status'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.2.1.2.2.1.8.{#SNMPINDEX}]
+        key: uisp.if.status[{#SNMPINDEX}]
+        delay: 2m
+        valuemap:
+          name: IF-MIB ifOperStatus
+        tags:
+        - tag: component
+          value: network
+      - uuid: 3c35e6ad39a149a0a83437016e43959c
+        name: 'Interface {#IFNAME}: Admin status'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.2.1.2.2.1.7.{#SNMPINDEX}]
+        key: uisp.if.admin[{#SNMPINDEX}]
+        delay: 5m
+        valuemap:
+          name: IF-MIB ifAdminStatus
+        tags:
+        - tag: component
+          value: network
+      - uuid: d821406fbdd7411aa9ee54eaf7e8dbc6
+        name: 'Interface {#IFNAME}: Incoming traffic (64-bit)'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.2.1.31.1.1.1.6.{#SNMPINDEX}]
+        key: uisp.if.hc.in[{#SNMPINDEX}]
+        delay: 1m
+        units: bps
+        description: 64-bit IF-MIB high-capacity octet counter, suitable for multi-gigabit uplinks.
+        preprocessing:
+        - type: CHANGE_PER_SECOND
+        - type: MULTIPLIER
+          parameters:
+          - '8'
+        tags:
+        - tag: component
+          value: traffic
+      - uuid: 7f50a52d8b454e29ba34ba3754072b1d
+        name: 'Interface {#IFNAME}: Outgoing traffic (64-bit)'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.2.1.31.1.1.1.10.{#SNMPINDEX}]
+        key: uisp.if.hc.out[{#SNMPINDEX}]
+        delay: 1m
+        units: bps
+        description: 64-bit IF-MIB high-capacity octet counter, suitable for multi-gigabit uplinks.
+        preprocessing:
+        - type: CHANGE_PER_SECOND
+        - type: MULTIPLIER
+          parameters:
+          - '8'
+        tags:
+        - tag: component
+          value: traffic
+      - uuid: 4efffa4466d043f28e5ccfd3fd5eb5bf
+        name: 'Interface {#IFNAME}: Incoming traffic (32-bit fallback)'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.2.1.2.2.1.10.{#SNMPINDEX}]
+        key: uisp.if.legacy.in[{#SNMPINDEX}]
+        delay: 1m
+        units: bps
+        description: Counter converted from bytes/s to bits/s. 32-bit counters may wrap at high throughput.
+        preprocessing:
+        - type: CHANGE_PER_SECOND
+        - type: MULTIPLIER
+          parameters:
+          - '8'
+        tags:
+        - tag: component
+          value: traffic
+      - uuid: 4ccff6ba95724b3d825501668126ec96
+        name: 'Interface {#IFNAME}: Outgoing traffic (32-bit fallback)'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.2.1.2.2.1.16.{#SNMPINDEX}]
+        key: uisp.if.legacy.out[{#SNMPINDEX}]
+        delay: 1m
+        units: bps
+        description: Counter converted from bytes/s to bits/s. 32-bit counters may wrap at high throughput.
+        preprocessing:
+        - type: CHANGE_PER_SECOND
+        - type: MULTIPLIER
+          parameters:
+          - '8'
+        tags:
+        - tag: component
+          value: traffic
+      - uuid: fff1c6a8547541c0bea6c0d5ff2552c2
+        name: 'Interface {#IFNAME}: Input errors'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.2.1.2.2.1.14.{#SNMPINDEX}]
+        key: uisp.if.in.errors[{#SNMPINDEX}]
+        delay: 2m
+        units: pps
+        preprocessing:
+        - type: CHANGE_PER_SECOND
+        tags:
+        - tag: component
+          value: errors
+      - uuid: 27ac31e9139a463d8bbe6c1b6ca542ea
+        name: 'Interface {#IFNAME}: Output errors'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.2.1.2.2.1.20.{#SNMPINDEX}]
+        key: uisp.if.out.errors[{#SNMPINDEX}]
+        delay: 2m
+        units: pps
+        preprocessing:
+        - type: CHANGE_PER_SECOND
+        tags:
+        - tag: component
+          value: errors
+      - uuid: 3caa6324abd8414f81e9d00119d31ead
+        name: 'Interface {#IFNAME}: Input discards'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.2.1.2.2.1.13.{#SNMPINDEX}]
+        key: uisp.if.in.discards[{#SNMPINDEX}]
+        delay: 2m
+        units: pps
+        preprocessing:
+        - type: CHANGE_PER_SECOND
+        tags:
+        - tag: component
+          value: errors
+      - uuid: 0e853e4acba84404ac1d436e85a07668
+        name: 'Interface {#IFNAME}: Output discards'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.2.1.2.2.1.19.{#SNMPINDEX}]
+        key: uisp.if.out.discards[{#SNMPINDEX}]
+        delay: 2m
+        units: pps
+        preprocessing:
+        - type: CHANGE_PER_SECOND
+        tags:
+        - tag: component
+          value: errors
+      graph_prototypes:
+      - uuid: 45d96dde94704f88879c836bb27595d5
+        name: 'Interface {#IFNAME}: Traffic (64-bit)'
+        graph_items:
+        - color: 199C0D
+          item:
+            host: Ubiquiti Rocket Prism 5AC by SNMP
+            key: uisp.if.hc.in[{#SNMPINDEX}]
+        - sortorder: '1'
+          color: F63100
+          item:
+            host: Ubiquiti Rocket Prism 5AC by SNMP
+            key: uisp.if.hc.out[{#SNMPINDEX}]
+      - uuid: a011d560365d41a7b674d6face061a1e
+        name: 'Interface {#IFNAME}: Traffic (32-bit fallback)'
+        graph_items:
+        - color: 199C0D
+          item:
+            host: Ubiquiti Rocket Prism 5AC by SNMP
+            key: uisp.if.legacy.in[{#SNMPINDEX}]
+        - sortorder: '1'
+          color: F63100
+          item:
+            host: Ubiquiti Rocket Prism 5AC by SNMP
+            key: uisp.if.legacy.out[{#SNMPINDEX}]
+      - uuid: dfa4b8cfbb0048b99fc4b51aeb4db790
+        name: 'Interface {#IFNAME}: Errors and discards'
+        graph_items:
+        - color: 199C0D
+          item:
+            host: Ubiquiti Rocket Prism 5AC by SNMP
+            key: uisp.if.in.errors[{#SNMPINDEX}]
+        - sortorder: '1'
+          color: F63100
+          item:
+            host: Ubiquiti Rocket Prism 5AC by SNMP
+            key: uisp.if.out.errors[{#SNMPINDEX}]
+        - sortorder: '2'
+          color: 1A7BC5
+          item:
+            host: Ubiquiti Rocket Prism 5AC by SNMP
+            key: uisp.if.in.discards[{#SNMPINDEX}]
+        - sortorder: '3'
+          color: 6C59DC
+          item:
+            host: Ubiquiti Rocket Prism 5AC by SNMP
+            key: uisp.if.out.discards[{#SNMPINDEX}]
+      trigger_prototypes:
+      - uuid: e8c41fda2f0e4de188fa2535342a76ec
+        expression: '{$UISP.IF.ALERT:"{#IFNAME}"}=1 and last(/Ubiquiti Rocket Prism 5AC by SNMP/uisp.if.status[{#SNMPINDEX}])=2'
+        name: 'Rocket Prism 5AC: Interface {#IFNAME} is down'
+        priority: AVERAGE
+        description: Opt-in interface alert. Set contextual {$UISP.IF.ALERT:"<interface>"}=1 for the intended physical uplink
+          only.
+        tags:
+        - tag: scope
+          value: availability
+    - uuid: 60eceaa9bf6b4a93a951cc8fa7185d82
+      name: airMAX wireless interface discovery
+      type: SNMP_AGENT
+      snmp_oid: discovery[{#SSID},1.3.6.1.4.1.41112.1.4.5.1.2]
+      key: uisp.airmax.wireless.discovery
+      delay: 10m
+      description: UBNT-AirMAX-MIB wireless status table. Ubiquiti documents ubntWlStatSignal as .1.3.6.1.4.1.41112.1.4.5.1.5.
+      item_prototypes:
+      - uuid: bedff95c387948c4a36acec92a971dfc
+        name: 'airMAX {#SSID}: Signal'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.4.1.41112.1.4.5.1.5.{#SNMPINDEX}]
+        key: uisp.airmax.signal[{#SNMPINDEX}]
+        delay: 2m
+        tags:
+        - tag: component
+          value: wireless
+        units: dBm
+      - uuid: fcbe669b450f48fea64f651e597f6e03
+        name: 'airMAX {#SSID}: RSSI'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.4.1.41112.1.4.5.1.6.{#SNMPINDEX}]
+        key: uisp.airmax.rssi[{#SNMPINDEX}]
+        delay: 2m
+        tags:
+        - tag: component
+          value: wireless
+        units: dBm
+      - uuid: 94bfad10b735407c9236d17e0c5ba412
+        name: 'airMAX {#SSID}: CCQ'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.4.1.41112.1.4.5.1.7.{#SNMPINDEX}]
+        key: uisp.airmax.ccq[{#SNMPINDEX}]
+        delay: 2m
+        tags:
+        - tag: component
+          value: wireless
+        units: '%'
+      - uuid: 8ff1d5ef76254bb69efeff3d00565ac5
+        name: 'airMAX {#SSID}: Noise floor'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.4.1.41112.1.4.5.1.8.{#SNMPINDEX}]
+        key: uisp.airmax.noise[{#SNMPINDEX}]
+        delay: 2m
+        tags:
+        - tag: component
+          value: wireless
+        units: dBm
+      - uuid: 738baff998c54e3eb1b1814d1e2d1ab0
+        name: 'airMAX {#SSID}: TX rate'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.4.1.41112.1.4.5.1.9.{#SNMPINDEX}]
+        key: uisp.airmax.txrate[{#SNMPINDEX}]
+        delay: 2m
+        tags:
+        - tag: component
+          value: wireless
+      - uuid: 4e9cc2bc2c1f4d25aad939024ddc5d05
+        name: 'airMAX {#SSID}: RX rate'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.4.1.41112.1.4.5.1.10.{#SNMPINDEX}]
+        key: uisp.airmax.rxrate[{#SNMPINDEX}]
+        delay: 2m
+        tags:
+        - tag: component
+          value: wireless
+      - uuid: d016442edd944b8eb635931fcc7e2fd5
+        name: 'airMAX {#SSID}: Station count'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.4.1.41112.1.4.5.1.15.{#SNMPINDEX}]
+        key: uisp.airmax.stations[{#SNMPINDEX}]
+        delay: 2m
+        tags:
+        - tag: component
+          value: wireless
+      graph_prototypes:
+      - uuid: d8d29311112d44698b44f28f6a492a39
+        name: 'airMAX {#SSID}: RF signal'
+        graph_items:
+        - color: 199C0D
+          item:
+            host: Ubiquiti Rocket Prism 5AC by SNMP
+            key: uisp.airmax.signal[{#SNMPINDEX}]
+        - sortorder: '1'
+          color: F63100
+          item:
+            host: Ubiquiti Rocket Prism 5AC by SNMP
+            key: uisp.airmax.noise[{#SNMPINDEX}]
+      - uuid: f6ee8d4a54644d22a984cbbabe8bf45b
+        name: 'airMAX {#SSID}: Link rates'
+        graph_items:
+        - color: 199C0D
+          item:
+            host: Ubiquiti Rocket Prism 5AC by SNMP
+            key: uisp.airmax.txrate[{#SNMPINDEX}]
+        - sortorder: '1'
+          color: F63100
+          item:
+            host: Ubiquiti Rocket Prism 5AC by SNMP
+            key: uisp.airmax.rxrate[{#SNMPINDEX}]
+    - uuid: ce6063ec881a421ea368b59951e657be
+      name: airMAX quality discovery
+      type: SNMP_AGENT
+      snmp_oid: discovery[{#AMQ},1.3.6.1.4.1.41112.1.4.6.1.3]
+      key: uisp.airmax.quality.discovery
+      delay: 10m
+      item_prototypes:
+      - uuid: b515f602ea35462d9c76bb94d0f12018
+        name: airMAX quality
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.4.1.41112.1.4.6.1.3.{#SNMPINDEX}]
+        key: uisp.airmax.quality[{#SNMPINDEX}]
+        delay: 2m
+        tags:
+        - tag: component
+          value: wireless
+        units: '%'
+      - uuid: 81c80e41df7f4529a64348e8ce60909d
+        name: airMAX capacity
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.4.1.41112.1.4.6.1.4.{#SNMPINDEX}]
+        key: uisp.airmax.capacity[{#SNMPINDEX}]
+        delay: 2m
+        tags:
+        - tag: component
+          value: wireless
+        units: '%'
+      - uuid: e2fafa1bfad240c1a480c881330808af
+        name: airMAX airtime
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.4.1.41112.1.4.6.1.7.{#SNMPINDEX}]
+        key: uisp.airmax.airtime[{#SNMPINDEX}]
+        delay: 2m
+        tags:
+        - tag: component
+          value: wireless
+        units: '%'
+        preprocessing:
+        - type: MULTIPLIER
+          parameters:
+          - '0.1'
+      graph_prototypes:
+      - uuid: 50c5b4e000a74df0901b0efc97bacd95
+        name: airMAX quality / capacity
+        graph_items:
+        - color: 199C0D
+          item:
+            host: Ubiquiti Rocket Prism 5AC by SNMP
+            key: uisp.airmax.quality[{#SNMPINDEX}]
+        - sortorder: '1'
+          color: F63100
+          item:
+            host: Ubiquiti Rocket Prism 5AC by SNMP
+            key: uisp.airmax.capacity[{#SNMPINDEX}]
+        - sortorder: '2'
+          color: 1A7BC5
+          item:
+            host: Ubiquiti Rocket Prism 5AC by SNMP
+            key: uisp.airmax.airtime[{#SNMPINDEX}]
+    tags:
+    - tag: vendor
+      value: Ubiquiti
+    - tag: family
+      value: airMAX
+    - tag: model
+      value: RP-5AC-Gen2
+    - tag: role
+      value: PtP/PtMP base station
+    macros:
+    - macro: '{$ICMP.LOSS.WARN}'
+      value: '20'
+      description: Packet-loss percent threshold
+    - macro: '{$ICMP.RTT.WARN}'
+      value: '0.15'
+      description: Round-trip time threshold (seconds)
+    - macro: '{$UISP.IF.MATCHES}'
+      value: .*
+      description: Regex filter for interface descriptions
+    - macro: '{$UISP.IF.ALERT}'
+      value: '0'
+      description: Global interface-down alert is disabled. Use contextual {$UISP.IF.ALERT:"<physical-interface>"}=1 to enable
+        only for intended ports.
+    - macro: '{$UISP.RF.ALERT}'
+      value: '0'
+      description: Enable RF-link-down trigger only after confirming the private MIB/profile works on this device/firmware.
+    valuemaps:
+    - uuid: 95a2b028ade94e06b7f8bfdecaaf3846
+      name: IF-MIB ifOperStatus
+      mappings:
+      - value: '1'
+        newvalue: up
+      - value: '2'
+        newvalue: down
+      - value: '3'
+        newvalue: testing
+      - value: '4'
+        newvalue: unknown
+      - value: '5'
+        newvalue: dormant
+      - value: '6'
+        newvalue: notPresent
+      - value: '7'
+        newvalue: lowerLayerDown
+    - uuid: 9be25fdc90b54b738f8f2f45e07faac0
+      name: IF-MIB ifAdminStatus
+      mappings:
+      - value: '1'
+        newvalue: up
+      - value: '2'
+        newvalue: down
+      - value: '3'
+        newvalue: testing
+  graphs:
+  - uuid: 99c60e806c6944bf995019c83e84d8af
+    name: 'Rocket Prism 5AC: ICMP latency'
+    graph_items:
+    - color: 199C0D
+      item:
+        host: Ubiquiti Rocket Prism 5AC by SNMP
+        key: icmppingsec
+  - uuid: 74a7de08cced46649ca145c2d743ff12
+    name: 'Rocket Prism 5AC: ICMP packet loss'
+    graph_items:
+    - color: 199C0D
+      item:
+        host: Ubiquiti Rocket Prism 5AC by SNMP
+        key: icmppingloss
+  - uuid: 7e968af78c8f4f9b8a621cd83e018660
+    name: 'Rocket Prism 5AC: SNMP agent uptime'
+    graph_items:
+    - color: 199C0D
+      item:
+        host: Ubiquiti Rocket Prism 5AC by SNMP
+        key: uisp.system.uptime

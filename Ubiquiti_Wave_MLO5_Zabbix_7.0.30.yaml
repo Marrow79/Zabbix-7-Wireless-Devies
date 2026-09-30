@@ -1,0 +1,103 @@
+zabbix_export:
+  version: '7.0'
+  template_groups:
+  - uuid: 36bff6c29af64692839d077febfc7079
+    name: Templates/Network devices
+  templates:
+  - uuid: 94141dec42d64e54a78d48c58060a8a7
+    template: Ubiquiti Wave MLO5 by ICMP
+    name: Ubiquiti Wave MLO5 by ICMP
+    description: 'Zabbix 7.0.30 template for Ubiquiti Wave MLO5 (Wave-MLO5). Role: PtP. SNMP assessment: Unverified. Current
+      product listing verified; public evidence gathered did not verify direct SNMP support for these MLO models. ICMP-only
+      template supplied to avoid inventing SNMP support. SNMP credentials/interface are configured at the Zabbix host, not
+      in this template.'
+    groups:
+    - name: Templates/Network devices
+    items:
+    - uuid: f3f2cc2bbb2d4b50867a62c914204338
+      name: ICMP ping
+      type: SIMPLE
+      key: icmpping
+      delay: 1m
+      history: 7d
+      tags:
+      - tag: component
+        value: health
+      triggers:
+      - uuid: 8b6642b6fa364e41bc5a430bd668716c
+        expression: max(/Ubiquiti Wave MLO5 by ICMP/icmpping,#3)=0
+        name: 'Wave MLO5: Unavailable by ICMP ping'
+        priority: HIGH
+        description: Three consecutive ICMP checks failed.
+        tags:
+        - tag: scope
+          value: availability
+    - uuid: d4febbb988f84a26830fb7db93409db4
+      name: ICMP packet loss
+      type: SIMPLE
+      key: icmppingloss
+      delay: 1m
+      value_type: FLOAT
+      units: '%'
+      tags:
+      - tag: component
+        value: health
+      triggers:
+      - uuid: 98efe6a374744b26b5160ae155010f0c
+        expression: min(/Ubiquiti Wave MLO5 by ICMP/icmppingloss,5m)>{$ICMP.LOSS.WARN} and min(/Ubiquiti Wave MLO5 by ICMP/icmppingloss,5m)<100
+        name: 'Wave MLO5: High ICMP packet loss'
+        priority: WARNING
+        description: Packet loss exceeded the warning threshold for 5 minutes.
+        tags:
+        - tag: scope
+          value: performance
+    - uuid: 7745a9cf92e844648848ec7ce738ed23
+      name: ICMP response time
+      type: SIMPLE
+      key: icmppingsec
+      delay: 1m
+      value_type: FLOAT
+      units: s
+      tags:
+      - tag: component
+        value: health
+      triggers:
+      - uuid: 79b7163c519a4589b946f06493b97b71
+        expression: avg(/Ubiquiti Wave MLO5 by ICMP/icmppingsec,5m)>{$ICMP.RTT.WARN}
+        name: 'Wave MLO5: High ICMP response time'
+        priority: WARNING
+        description: Average round-trip time exceeded threshold for 5 minutes.
+        tags:
+        - tag: scope
+          value: performance
+    tags:
+    - tag: vendor
+      value: Ubiquiti
+    - tag: family
+      value: Wave MLO
+    - tag: model
+      value: Wave-MLO5
+    - tag: role
+      value: PtP
+    macros:
+    - macro: '{$ICMP.LOSS.WARN}'
+      value: '20'
+      description: Packet-loss percent threshold
+    - macro: '{$ICMP.RTT.WARN}'
+      value: '0.15'
+      description: Round-trip time threshold (seconds)
+  graphs:
+  - uuid: 3aef2d23fd0f466a8582465103a1e7a2
+    name: 'Wave MLO5: ICMP latency'
+    graph_items:
+    - color: 199C0D
+      item:
+        host: Ubiquiti Wave MLO5 by ICMP
+        key: icmppingsec
+  - uuid: 0fbdca1dd60b4589bf4afb2c96acdece
+    name: 'Wave MLO5: ICMP packet loss'
+    graph_items:
+    - color: 199C0D
+      item:
+        host: Ubiquiti Wave MLO5 by ICMP
+        key: icmppingloss

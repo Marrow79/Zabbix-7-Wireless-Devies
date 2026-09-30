@@ -1,0 +1,103 @@
+zabbix_export:
+  version: '7.0'
+  template_groups:
+  - uuid: 36bff6c29af64692839d077febfc7079
+    name: Templates/Network devices
+  templates:
+  - uuid: be4fa7409f6f4095a976350a5cfa3aa3
+    template: Ubiquiti Wave MLO6 by ICMP
+    name: Ubiquiti Wave MLO6 by ICMP
+    description: 'Zabbix 7.0.30 template for Ubiquiti Wave MLO6 (Wave-MLO6). Role: PtP. SNMP assessment: Unverified. Current
+      product listing verified; public evidence gathered did not verify direct SNMP support for these MLO models. ICMP-only
+      template supplied to avoid inventing SNMP support. SNMP credentials/interface are configured at the Zabbix host, not
+      in this template.'
+    groups:
+    - name: Templates/Network devices
+    items:
+    - uuid: 093cabee1731418d9311733cc5f864ee
+      name: ICMP ping
+      type: SIMPLE
+      key: icmpping
+      delay: 1m
+      history: 7d
+      tags:
+      - tag: component
+        value: health
+      triggers:
+      - uuid: 4ab8265dfda949fdaee2ff4af55607f6
+        expression: max(/Ubiquiti Wave MLO6 by ICMP/icmpping,#3)=0
+        name: 'Wave MLO6: Unavailable by ICMP ping'
+        priority: HIGH
+        description: Three consecutive ICMP checks failed.
+        tags:
+        - tag: scope
+          value: availability
+    - uuid: d93cd21d3a88416596662f0104583725
+      name: ICMP packet loss
+      type: SIMPLE
+      key: icmppingloss
+      delay: 1m
+      value_type: FLOAT
+      units: '%'
+      tags:
+      - tag: component
+        value: health
+      triggers:
+      - uuid: 36090ff5748d46b3b6cb0f66e4fadc2b
+        expression: min(/Ubiquiti Wave MLO6 by ICMP/icmppingloss,5m)>{$ICMP.LOSS.WARN} and min(/Ubiquiti Wave MLO6 by ICMP/icmppingloss,5m)<100
+        name: 'Wave MLO6: High ICMP packet loss'
+        priority: WARNING
+        description: Packet loss exceeded the warning threshold for 5 minutes.
+        tags:
+        - tag: scope
+          value: performance
+    - uuid: 340846bfa90d46b5a4be1ecc8eb5d383
+      name: ICMP response time
+      type: SIMPLE
+      key: icmppingsec
+      delay: 1m
+      value_type: FLOAT
+      units: s
+      tags:
+      - tag: component
+        value: health
+      triggers:
+      - uuid: d1f2e39a8b0244858a253e9cdb5cd7ac
+        expression: avg(/Ubiquiti Wave MLO6 by ICMP/icmppingsec,5m)>{$ICMP.RTT.WARN}
+        name: 'Wave MLO6: High ICMP response time'
+        priority: WARNING
+        description: Average round-trip time exceeded threshold for 5 minutes.
+        tags:
+        - tag: scope
+          value: performance
+    tags:
+    - tag: vendor
+      value: Ubiquiti
+    - tag: family
+      value: Wave MLO
+    - tag: model
+      value: Wave-MLO6
+    - tag: role
+      value: PtP
+    macros:
+    - macro: '{$ICMP.LOSS.WARN}'
+      value: '20'
+      description: Packet-loss percent threshold
+    - macro: '{$ICMP.RTT.WARN}'
+      value: '0.15'
+      description: Round-trip time threshold (seconds)
+  graphs:
+  - uuid: 418723f427c04a9596a4d847bb89a6a7
+    name: 'Wave MLO6: ICMP latency'
+    graph_items:
+    - color: 199C0D
+      item:
+        host: Ubiquiti Wave MLO6 by ICMP
+        key: icmppingsec
+  - uuid: 47994362ca41495caaec14fdd8c11128
+    name: 'Wave MLO6: ICMP packet loss'
+    graph_items:
+    - color: 199C0D
+      item:
+        host: Ubiquiti Wave MLO6 by ICMP
+        key: icmppingloss

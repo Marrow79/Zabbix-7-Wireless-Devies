@@ -1,0 +1,623 @@
+zabbix_export:
+  version: '7.0'
+  template_groups:
+  - uuid: 36bff6c29af64692839d077febfc7079
+    name: Templates/Network devices
+  templates:
+  - uuid: 41465a8510ae4376ad3a079d6c67a203
+    template: Ubiquiti airFiber 60 Long-Range by SNMP
+    name: Ubiquiti airFiber 60 Long-Range by SNMP
+    description: 'Zabbix 7.0.30 template for Ubiquiti airFiber 60 Long-Range (AF60-LR). Role: PtP/PtMP station. SNMP assessment:
+      Yes. AF60-LR current tech specs explicitly list SNMP; UI-AF60-MIB provides AF60 objects. For XR/XG, verify firmware
+      exposes the same SNMP service/MIB.  SNMP credentials/interface are configured at the Zabbix host, not in this template.'
+    groups:
+    - name: Templates/Network devices
+    items:
+    - uuid: cfb7c18c1de449949ef0b7af480ea919
+      name: ICMP ping
+      type: SIMPLE
+      key: icmpping
+      delay: 1m
+      history: 7d
+      tags:
+      - tag: component
+        value: health
+      triggers:
+      - uuid: 7c8daba83dde4c03a7f4c4f813915e83
+        expression: max(/Ubiquiti airFiber 60 Long-Range by SNMP/icmpping,#3)=0
+        name: 'airFiber 60 Long-Range: Unavailable by ICMP ping'
+        priority: HIGH
+        description: Three consecutive ICMP checks failed.
+        tags:
+        - tag: scope
+          value: availability
+    - uuid: 4dd8689024524b9791381bf1773ada1e
+      name: ICMP packet loss
+      type: SIMPLE
+      key: icmppingloss
+      delay: 1m
+      value_type: FLOAT
+      units: '%'
+      tags:
+      - tag: component
+        value: health
+      triggers:
+      - uuid: 7f80431a28e648a9bd4acadf4311aa2b
+        expression: min(/Ubiquiti airFiber 60 Long-Range by SNMP/icmppingloss,5m)>{$ICMP.LOSS.WARN} and min(/Ubiquiti airFiber
+          60 Long-Range by SNMP/icmppingloss,5m)<100
+        name: 'airFiber 60 Long-Range: High ICMP packet loss'
+        priority: WARNING
+        description: Packet loss exceeded the warning threshold for 5 minutes.
+        tags:
+        - tag: scope
+          value: performance
+    - uuid: 440cb1cdd37544afb5e5f77811dc7b71
+      name: ICMP response time
+      type: SIMPLE
+      key: icmppingsec
+      delay: 1m
+      value_type: FLOAT
+      units: s
+      tags:
+      - tag: component
+        value: health
+      triggers:
+      - uuid: 77f7e27e27a54a9fae2a400585c8ce21
+        expression: avg(/Ubiquiti airFiber 60 Long-Range by SNMP/icmppingsec,5m)>{$ICMP.RTT.WARN}
+        name: 'airFiber 60 Long-Range: High ICMP response time'
+        priority: WARNING
+        description: Average round-trip time exceeded threshold for 5 minutes.
+        tags:
+        - tag: scope
+          value: performance
+    - uuid: f53827a233f24b9cb0172cb81dccbe4b
+      name: SNMP network uptime
+      type: SNMP_AGENT
+      snmp_oid: get[1.3.6.1.2.1.1.3.0]
+      key: uisp.system.uptime
+      delay: 1m
+      units: uptime
+      description: sysUpTime (TimeTicks / 100); measures SNMP agent uptime, not guaranteed hardware uptime.
+      preprocessing:
+      - type: MULTIPLIER
+        parameters:
+        - '0.01'
+      tags:
+      - tag: component
+        value: health
+      triggers:
+      - uuid: a8911629a4924b919d7416d6e80b9bd5
+        expression: nodata(/Ubiquiti airFiber 60 Long-Range by SNMP/uisp.system.uptime,15m)=1 and last(/Ubiquiti airFiber
+          60 Long-Range by SNMP/icmpping)=1
+        name: 'airFiber 60 Long-Range: SNMP stops responding while ping succeeds'
+        priority: AVERAGE
+        description: Device replies to ping but sysUpTime polling has had no data for 15 minutes; check SNMP credentials/firewall.
+        tags:
+        - tag: scope
+          value: availability
+    - uuid: 0abc399fa8bb44d9a927aa29c3e16b73
+      name: SNMP system description
+      type: SNMP_AGENT
+      snmp_oid: get[1.3.6.1.2.1.1.1.0]
+      key: uisp.system.description
+      delay: 1h
+      value_type: CHAR
+      preprocessing:
+      - type: DISCARD_UNCHANGED_HEARTBEAT
+        parameters:
+        - 12h
+      tags:
+      - tag: component
+        value: inventory
+    - uuid: d98099e05ce5488893840d95786830a3
+      name: SNMP system object ID
+      type: SNMP_AGENT
+      snmp_oid: get[1.3.6.1.2.1.1.2.0]
+      key: uisp.system.objectid
+      delay: 1h
+      value_type: CHAR
+      preprocessing:
+      - type: DISCARD_UNCHANGED_HEARTBEAT
+        parameters:
+        - 12h
+      tags:
+      - tag: component
+        value: inventory
+    - uuid: ee7fcea07c2c49e6bf00cb2770835198
+      name: SNMP system name
+      type: SNMP_AGENT
+      snmp_oid: get[1.3.6.1.2.1.1.5.0]
+      key: uisp.system.name
+      delay: 1h
+      value_type: CHAR
+      preprocessing:
+      - type: DISCARD_UNCHANGED_HEARTBEAT
+        parameters:
+        - 12h
+      tags:
+      - tag: component
+        value: inventory
+    - uuid: 42320f3672d148e2a5ef00309d2a821a
+      name: SNMP system location
+      type: SNMP_AGENT
+      snmp_oid: get[1.3.6.1.2.1.1.6.0]
+      key: uisp.system.location
+      delay: 1h
+      value_type: CHAR
+      preprocessing:
+      - type: DISCARD_UNCHANGED_HEARTBEAT
+        parameters:
+        - 12h
+      tags:
+      - tag: component
+        value: inventory
+    - uuid: 5ba80cb40674403f9dc02e83bca0d01b
+      name: SNMP system contact
+      type: SNMP_AGENT
+      snmp_oid: get[1.3.6.1.2.1.1.4.0]
+      key: uisp.system.contact
+      delay: 1h
+      value_type: CHAR
+      preprocessing:
+      - type: DISCARD_UNCHANGED_HEARTBEAT
+        parameters:
+        - 12h
+      tags:
+      - tag: component
+        value: inventory
+    - uuid: 9014fd9691e4469f91821ead8e1b04b9
+      name: AF60/Wave device model
+      type: SNMP_AGENT
+      snmp_oid: get[1.3.6.1.4.1.41112.1.11.1.2.2.0]
+      key: uisp.af60.model
+      delay: 10m
+      value_type: CHAR
+      tags:
+      - tag: component
+        value: wireless
+    - uuid: 6a77dfeb7bef467eb7f52cd186331b2c
+      name: AF60/Wave firmware version
+      type: SNMP_AGENT
+      snmp_oid: get[1.3.6.1.4.1.41112.1.11.1.2.4.0]
+      key: uisp.af60.firmware
+      delay: 10m
+      value_type: CHAR
+      tags:
+      - tag: component
+        value: wireless
+    - uuid: 9e760badc3384abc8c8f13f764762a77
+      name: AF60/Wave memory usage
+      type: SNMP_AGENT
+      snmp_oid: get[1.3.6.1.4.1.41112.1.11.1.2.5.0]
+      key: uisp.af60.memory
+      delay: 2m
+      units: '%'
+      tags:
+      - tag: component
+        value: wireless
+    - uuid: f9c8e25cdc8745f6b64f185411e3f3de
+      name: AF60/Wave CPU usage
+      type: SNMP_AGENT
+      snmp_oid: get[1.3.6.1.4.1.41112.1.11.1.2.6.0]
+      key: uisp.af60.cpu
+      delay: 2m
+      units: '%'
+      tags:
+      - tag: component
+        value: wireless
+    - uuid: 0529036f8ecf4d95b8a1a3e7ad458a6c
+      name: AF60/Wave configured frequency
+      type: SNMP_AGENT
+      snmp_oid: get[1.3.6.1.4.1.41112.1.11.1.1.2.0]
+      key: uisp.af60.frequency
+      delay: 2m
+      units: MHz
+      tags:
+      - tag: component
+        value: wireless
+    discovery_rules:
+    - uuid: cd7fb908553248a8887c83e763eec82c
+      name: Network interface discovery (IF-MIB)
+      type: SNMP_AGENT
+      snmp_oid: discovery[{#IFNAME},1.3.6.1.2.1.2.2.1.2,{#IFADMIN},1.3.6.1.2.1.2.2.1.7]
+      key: uisp.if.discovery
+      delay: 1h
+      description: Standard IF-MIB/IF-X-MIB discovery. High-capacity 64-bit counters may be unsupported on older devices;
+        classic 32-bit counters are included as fallback.
+      filter:
+        conditions:
+        - macro: '{#IFNAME}'
+          value: '{$UISP.IF.MATCHES}'
+      item_prototypes:
+      - uuid: 8bb5015768fd4a4593957fdd83e8e4e0
+        name: 'Interface {#IFNAME}: Operational status'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.2.1.2.2.1.8.{#SNMPINDEX}]
+        key: uisp.if.status[{#SNMPINDEX}]
+        delay: 2m
+        valuemap:
+          name: IF-MIB ifOperStatus
+        tags:
+        - tag: component
+          value: network
+      - uuid: 0021bcdc479541c48c4a1f96b528a22b
+        name: 'Interface {#IFNAME}: Admin status'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.2.1.2.2.1.7.{#SNMPINDEX}]
+        key: uisp.if.admin[{#SNMPINDEX}]
+        delay: 5m
+        valuemap:
+          name: IF-MIB ifAdminStatus
+        tags:
+        - tag: component
+          value: network
+      - uuid: 845b0f2f43a84741a0ce0fba8f7572c8
+        name: 'Interface {#IFNAME}: Incoming traffic (64-bit)'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.2.1.31.1.1.1.6.{#SNMPINDEX}]
+        key: uisp.if.hc.in[{#SNMPINDEX}]
+        delay: 1m
+        units: bps
+        description: 64-bit IF-MIB high-capacity octet counter, suitable for multi-gigabit uplinks.
+        preprocessing:
+        - type: CHANGE_PER_SECOND
+        - type: MULTIPLIER
+          parameters:
+          - '8'
+        tags:
+        - tag: component
+          value: traffic
+      - uuid: 5ec40b5ee4a24ddfa911116e88ff988c
+        name: 'Interface {#IFNAME}: Outgoing traffic (64-bit)'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.2.1.31.1.1.1.10.{#SNMPINDEX}]
+        key: uisp.if.hc.out[{#SNMPINDEX}]
+        delay: 1m
+        units: bps
+        description: 64-bit IF-MIB high-capacity octet counter, suitable for multi-gigabit uplinks.
+        preprocessing:
+        - type: CHANGE_PER_SECOND
+        - type: MULTIPLIER
+          parameters:
+          - '8'
+        tags:
+        - tag: component
+          value: traffic
+      - uuid: ab15454b54a14ece83401f2aebe7d5a4
+        name: 'Interface {#IFNAME}: Incoming traffic (32-bit fallback)'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.2.1.2.2.1.10.{#SNMPINDEX}]
+        key: uisp.if.legacy.in[{#SNMPINDEX}]
+        delay: 1m
+        units: bps
+        description: Counter converted from bytes/s to bits/s. 32-bit counters may wrap at high throughput.
+        preprocessing:
+        - type: CHANGE_PER_SECOND
+        - type: MULTIPLIER
+          parameters:
+          - '8'
+        tags:
+        - tag: component
+          value: traffic
+      - uuid: c1256a958cee42c0b6894781019d05f0
+        name: 'Interface {#IFNAME}: Outgoing traffic (32-bit fallback)'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.2.1.2.2.1.16.{#SNMPINDEX}]
+        key: uisp.if.legacy.out[{#SNMPINDEX}]
+        delay: 1m
+        units: bps
+        description: Counter converted from bytes/s to bits/s. 32-bit counters may wrap at high throughput.
+        preprocessing:
+        - type: CHANGE_PER_SECOND
+        - type: MULTIPLIER
+          parameters:
+          - '8'
+        tags:
+        - tag: component
+          value: traffic
+      - uuid: 7edfc057b04540999aa9f2eba23aebb3
+        name: 'Interface {#IFNAME}: Input errors'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.2.1.2.2.1.14.{#SNMPINDEX}]
+        key: uisp.if.in.errors[{#SNMPINDEX}]
+        delay: 2m
+        units: pps
+        preprocessing:
+        - type: CHANGE_PER_SECOND
+        tags:
+        - tag: component
+          value: errors
+      - uuid: f1987755f9c34207985bc0e96196f124
+        name: 'Interface {#IFNAME}: Output errors'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.2.1.2.2.1.20.{#SNMPINDEX}]
+        key: uisp.if.out.errors[{#SNMPINDEX}]
+        delay: 2m
+        units: pps
+        preprocessing:
+        - type: CHANGE_PER_SECOND
+        tags:
+        - tag: component
+          value: errors
+      - uuid: 8e37f895c6694996923aa21520507233
+        name: 'Interface {#IFNAME}: Input discards'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.2.1.2.2.1.13.{#SNMPINDEX}]
+        key: uisp.if.in.discards[{#SNMPINDEX}]
+        delay: 2m
+        units: pps
+        preprocessing:
+        - type: CHANGE_PER_SECOND
+        tags:
+        - tag: component
+          value: errors
+      - uuid: 85738e529ffb4436a3f5ee932051c7a2
+        name: 'Interface {#IFNAME}: Output discards'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.2.1.2.2.1.19.{#SNMPINDEX}]
+        key: uisp.if.out.discards[{#SNMPINDEX}]
+        delay: 2m
+        units: pps
+        preprocessing:
+        - type: CHANGE_PER_SECOND
+        tags:
+        - tag: component
+          value: errors
+      graph_prototypes:
+      - uuid: b0871f2c61724ac3a5ccea009f5836d1
+        name: 'Interface {#IFNAME}: Traffic (64-bit)'
+        graph_items:
+        - color: 199C0D
+          item:
+            host: Ubiquiti airFiber 60 Long-Range by SNMP
+            key: uisp.if.hc.in[{#SNMPINDEX}]
+        - sortorder: '1'
+          color: F63100
+          item:
+            host: Ubiquiti airFiber 60 Long-Range by SNMP
+            key: uisp.if.hc.out[{#SNMPINDEX}]
+      - uuid: 84c2af47ea53480c9b4017e9931d62df
+        name: 'Interface {#IFNAME}: Traffic (32-bit fallback)'
+        graph_items:
+        - color: 199C0D
+          item:
+            host: Ubiquiti airFiber 60 Long-Range by SNMP
+            key: uisp.if.legacy.in[{#SNMPINDEX}]
+        - sortorder: '1'
+          color: F63100
+          item:
+            host: Ubiquiti airFiber 60 Long-Range by SNMP
+            key: uisp.if.legacy.out[{#SNMPINDEX}]
+      - uuid: b95be63bc638478ba1eaedf5200147a1
+        name: 'Interface {#IFNAME}: Errors and discards'
+        graph_items:
+        - color: 199C0D
+          item:
+            host: Ubiquiti airFiber 60 Long-Range by SNMP
+            key: uisp.if.in.errors[{#SNMPINDEX}]
+        - sortorder: '1'
+          color: F63100
+          item:
+            host: Ubiquiti airFiber 60 Long-Range by SNMP
+            key: uisp.if.out.errors[{#SNMPINDEX}]
+        - sortorder: '2'
+          color: 1A7BC5
+          item:
+            host: Ubiquiti airFiber 60 Long-Range by SNMP
+            key: uisp.if.in.discards[{#SNMPINDEX}]
+        - sortorder: '3'
+          color: 6C59DC
+          item:
+            host: Ubiquiti airFiber 60 Long-Range by SNMP
+            key: uisp.if.out.discards[{#SNMPINDEX}]
+      trigger_prototypes:
+      - uuid: e8ac7125716a476ba152a134a343a9fe
+        expression: '{$UISP.IF.ALERT:"{#IFNAME}"}=1 and last(/Ubiquiti airFiber 60 Long-Range by SNMP/uisp.if.status[{#SNMPINDEX}])=2'
+        name: 'airFiber 60 Long-Range: Interface {#IFNAME} is down'
+        priority: AVERAGE
+        description: Opt-in interface alert. Set contextual {$UISP.IF.ALERT:"<interface>"}=1 for the intended physical uplink
+          only.
+        tags:
+        - tag: scope
+          value: availability
+    - uuid: 2bc6b5a41a5045a2ad2e457bcbf9f288
+      name: AF60/Wave remote station discovery
+      type: SNMP_AGENT
+      snmp_oid: discovery[{#REMOTE},1.3.6.1.4.1.41112.1.11.1.3.1.14]
+      key: uisp.af60.station.discovery
+      delay: 10m
+      description: UI-AF60-MIB remote station table. On Wave models the private MIB may be partial or firmware-dependent;
+        disable this rule if unsupported.
+      item_prototypes:
+      - uuid: e61ce9cf0c9e4d21a5fe06fc0fc66f2f
+        name: 'AF60/Wave {#REMOTE}: Local RSSI'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.4.1.41112.1.11.1.3.1.3.{#SNMPINDEX}]
+        key: uisp.af60.rssi[{#SNMPINDEX}]
+        delay: 2m
+        tags:
+        - tag: component
+          value: wireless
+        units: dBm
+      - uuid: f37f3865fc074803a1780563935deacb
+        name: 'AF60/Wave {#REMOTE}: Local SNR'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.4.1.41112.1.11.1.3.1.4.{#SNMPINDEX}]
+        key: uisp.af60.snr[{#SNMPINDEX}]
+        delay: 2m
+        tags:
+        - tag: component
+          value: wireless
+        units: dB
+      - uuid: 13c1f4ef6df14fa9a2963ee798913617
+        name: 'AF60/Wave {#REMOTE}: TX capacity'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.4.1.41112.1.11.1.3.1.7.{#SNMPINDEX}]
+        key: uisp.af60.txcap[{#SNMPINDEX}]
+        delay: 2m
+        tags:
+        - tag: component
+          value: wireless
+        units: Kbps
+      - uuid: 4a404c4416f24a0eb032326cc526b3a7
+        name: 'AF60/Wave {#REMOTE}: RX capacity'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.4.1.41112.1.11.1.3.1.8.{#SNMPINDEX}]
+        key: uisp.af60.rxcap[{#SNMPINDEX}]
+        delay: 2m
+        tags:
+        - tag: component
+          value: wireless
+        units: Kbps
+      - uuid: adc34fe0813f4eb0b2c60cb4ae2bdf67
+        name: 'AF60/Wave {#REMOTE}: TX throughput'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.4.1.41112.1.11.1.3.1.11.{#SNMPINDEX}]
+        key: uisp.af60.txthrough[{#SNMPINDEX}]
+        delay: 2m
+        tags:
+        - tag: component
+          value: wireless
+        units: Kbps
+      - uuid: 97f0f1ce84e54906adf68b94f223ec3a
+        name: 'AF60/Wave {#REMOTE}: RX throughput'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.4.1.41112.1.11.1.3.1.12.{#SNMPINDEX}]
+        key: uisp.af60.rxthrough[{#SNMPINDEX}]
+        delay: 2m
+        tags:
+        - tag: component
+          value: wireless
+        units: Kbps
+      - uuid: 4c83d36cd39043969ab17f421814bf76
+        name: 'AF60/Wave {#REMOTE}: Distance'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.4.1.41112.1.11.1.3.1.15.{#SNMPINDEX}]
+        key: uisp.af60.distance[{#SNMPINDEX}]
+        delay: 2m
+        tags:
+        - tag: component
+          value: wireless
+        units: m
+      - uuid: 381f2e5306c547b3beb72bb6cdada900
+        name: 'AF60/Wave {#REMOTE}: Remote RSSI'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.4.1.41112.1.11.1.3.1.18.{#SNMPINDEX}]
+        key: uisp.af60.remote.rssi[{#SNMPINDEX}]
+        delay: 2m
+        tags:
+        - tag: component
+          value: wireless
+        units: dBm
+      graph_prototypes:
+      - uuid: a1d32fb3b7e9463aaf73c3a41a063f7d
+        name: 'AF60/Wave {#REMOTE}: Capacity'
+        graph_items:
+        - color: 199C0D
+          item:
+            host: Ubiquiti airFiber 60 Long-Range by SNMP
+            key: uisp.af60.txcap[{#SNMPINDEX}]
+        - sortorder: '1'
+          color: F63100
+          item:
+            host: Ubiquiti airFiber 60 Long-Range by SNMP
+            key: uisp.af60.rxcap[{#SNMPINDEX}]
+      - uuid: 213744ba64c045aa9eed9ee633925a20
+        name: 'AF60/Wave {#REMOTE}: Throughput'
+        graph_items:
+        - color: 199C0D
+          item:
+            host: Ubiquiti airFiber 60 Long-Range by SNMP
+            key: uisp.af60.txthrough[{#SNMPINDEX}]
+        - sortorder: '1'
+          color: F63100
+          item:
+            host: Ubiquiti airFiber 60 Long-Range by SNMP
+            key: uisp.af60.rxthrough[{#SNMPINDEX}]
+      - uuid: acc9040264fb48098349ed9722341c8a
+        name: 'AF60/Wave {#REMOTE}: Signal'
+        graph_items:
+        - color: 199C0D
+          item:
+            host: Ubiquiti airFiber 60 Long-Range by SNMP
+            key: uisp.af60.rssi[{#SNMPINDEX}]
+        - sortorder: '1'
+          color: F63100
+          item:
+            host: Ubiquiti airFiber 60 Long-Range by SNMP
+            key: uisp.af60.remote.rssi[{#SNMPINDEX}]
+    tags:
+    - tag: vendor
+      value: Ubiquiti
+    - tag: family
+      value: airFiber 60
+    - tag: model
+      value: AF60-LR
+    - tag: role
+      value: PtP/PtMP station
+    macros:
+    - macro: '{$ICMP.LOSS.WARN}'
+      value: '20'
+      description: Packet-loss percent threshold
+    - macro: '{$ICMP.RTT.WARN}'
+      value: '0.15'
+      description: Round-trip time threshold (seconds)
+    - macro: '{$UISP.IF.MATCHES}'
+      value: .*
+      description: Regex filter for interface descriptions
+    - macro: '{$UISP.IF.ALERT}'
+      value: '0'
+      description: Global interface-down alert is disabled. Use contextual {$UISP.IF.ALERT:"<physical-interface>"}=1 to enable
+        only for intended ports.
+    - macro: '{$UISP.RF.ALERT}'
+      value: '0'
+      description: Enable RF-link-down trigger only after confirming the private MIB/profile works on this device/firmware.
+    valuemaps:
+    - uuid: 2d0c7aa137964755b87bd5276b766f8b
+      name: IF-MIB ifOperStatus
+      mappings:
+      - value: '1'
+        newvalue: up
+      - value: '2'
+        newvalue: down
+      - value: '3'
+        newvalue: testing
+      - value: '4'
+        newvalue: unknown
+      - value: '5'
+        newvalue: dormant
+      - value: '6'
+        newvalue: notPresent
+      - value: '7'
+        newvalue: lowerLayerDown
+    - uuid: 833347e980184130b5f2c9ff503b1ef0
+      name: IF-MIB ifAdminStatus
+      mappings:
+      - value: '1'
+        newvalue: up
+      - value: '2'
+        newvalue: down
+      - value: '3'
+        newvalue: testing
+  graphs:
+  - uuid: 49cb69f1f712492489d1c2b3a4331f3d
+    name: 'airFiber 60 Long-Range: ICMP latency'
+    graph_items:
+    - color: 199C0D
+      item:
+        host: Ubiquiti airFiber 60 Long-Range by SNMP
+        key: icmppingsec
+  - uuid: c277cefca2374df09badb5cabccfdffd
+    name: 'airFiber 60 Long-Range: ICMP packet loss'
+    graph_items:
+    - color: 199C0D
+      item:
+        host: Ubiquiti airFiber 60 Long-Range by SNMP
+        key: icmppingloss
+  - uuid: 90edbe43c966434b96c9a6e996932228
+    name: 'airFiber 60 Long-Range: SNMP agent uptime'
+    graph_items:
+    - color: 199C0D
+      item:
+        host: Ubiquiti airFiber 60 Long-Range by SNMP
+        key: uisp.system.uptime

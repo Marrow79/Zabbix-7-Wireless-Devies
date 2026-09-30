@@ -1,0 +1,621 @@
+zabbix_export:
+  version: '7.0'
+  template_groups:
+  - uuid: 36bff6c29af64692839d077febfc7079
+    name: Templates/Network devices
+  templates:
+  - uuid: 793ec0302b1d409fb9d606e3467d1e16
+    template: Ubiquiti LTU Extreme-Range by SNMP
+    name: Ubiquiti LTU Extreme-Range by SNMP
+    description: 'Zabbix 7.0.30 template for Ubiquiti LTU Extreme-Range (LTU-XR). Role: PtMP client / PtP. SNMP assessment:
+      Yes. LTU product specifications list SNMP; AFLTU private MIB was published for AF-5XHD, not conclusively for LTU Rocket/clients,
+      so private checks are disabled pending verification.  SNMP credentials/interface are configured at the Zabbix host,
+      not in this template.'
+    groups:
+    - name: Templates/Network devices
+    items:
+    - uuid: d327752098404b6d956d489ff3d04d18
+      name: ICMP ping
+      type: SIMPLE
+      key: icmpping
+      delay: 1m
+      history: 7d
+      tags:
+      - tag: component
+        value: health
+      triggers:
+      - uuid: 7ea2ecd4d0f24104befb619d4469b421
+        expression: max(/Ubiquiti LTU Extreme-Range by SNMP/icmpping,#3)=0
+        name: 'LTU Extreme-Range: Unavailable by ICMP ping'
+        priority: HIGH
+        description: Three consecutive ICMP checks failed.
+        tags:
+        - tag: scope
+          value: availability
+    - uuid: e9bc9cba3d7747d6b5e336b74dda1570
+      name: ICMP packet loss
+      type: SIMPLE
+      key: icmppingloss
+      delay: 1m
+      value_type: FLOAT
+      units: '%'
+      tags:
+      - tag: component
+        value: health
+      triggers:
+      - uuid: 983bb5dea8e34de1a917eae9d29ed5fb
+        expression: min(/Ubiquiti LTU Extreme-Range by SNMP/icmppingloss,5m)>{$ICMP.LOSS.WARN} and min(/Ubiquiti LTU Extreme-Range
+          by SNMP/icmppingloss,5m)<100
+        name: 'LTU Extreme-Range: High ICMP packet loss'
+        priority: WARNING
+        description: Packet loss exceeded the warning threshold for 5 minutes.
+        tags:
+        - tag: scope
+          value: performance
+    - uuid: a3810088478d47538db832fe8a273a21
+      name: ICMP response time
+      type: SIMPLE
+      key: icmppingsec
+      delay: 1m
+      value_type: FLOAT
+      units: s
+      tags:
+      - tag: component
+        value: health
+      triggers:
+      - uuid: 1b464c06e656471ab6ac70a31a9faa9b
+        expression: avg(/Ubiquiti LTU Extreme-Range by SNMP/icmppingsec,5m)>{$ICMP.RTT.WARN}
+        name: 'LTU Extreme-Range: High ICMP response time'
+        priority: WARNING
+        description: Average round-trip time exceeded threshold for 5 minutes.
+        tags:
+        - tag: scope
+          value: performance
+    - uuid: 6e4d8ae1d8c3450792f4c578794723cd
+      name: SNMP network uptime
+      type: SNMP_AGENT
+      snmp_oid: get[1.3.6.1.2.1.1.3.0]
+      key: uisp.system.uptime
+      delay: 1m
+      units: uptime
+      description: sysUpTime (TimeTicks / 100); measures SNMP agent uptime, not guaranteed hardware uptime.
+      preprocessing:
+      - type: MULTIPLIER
+        parameters:
+        - '0.01'
+      tags:
+      - tag: component
+        value: health
+      triggers:
+      - uuid: 061f8eb21ca94dac8e19d2e57890dfde
+        expression: nodata(/Ubiquiti LTU Extreme-Range by SNMP/uisp.system.uptime,15m)=1 and last(/Ubiquiti LTU Extreme-Range
+          by SNMP/icmpping)=1
+        name: 'LTU Extreme-Range: SNMP stops responding while ping succeeds'
+        priority: AVERAGE
+        description: Device replies to ping but sysUpTime polling has had no data for 15 minutes; check SNMP credentials/firewall.
+        tags:
+        - tag: scope
+          value: availability
+    - uuid: 086126b42cd645db8f76827c7e7a4030
+      name: SNMP system description
+      type: SNMP_AGENT
+      snmp_oid: get[1.3.6.1.2.1.1.1.0]
+      key: uisp.system.description
+      delay: 1h
+      value_type: CHAR
+      preprocessing:
+      - type: DISCARD_UNCHANGED_HEARTBEAT
+        parameters:
+        - 12h
+      tags:
+      - tag: component
+        value: inventory
+    - uuid: 6e7ed7518f354bea91902d9752249c9e
+      name: SNMP system object ID
+      type: SNMP_AGENT
+      snmp_oid: get[1.3.6.1.2.1.1.2.0]
+      key: uisp.system.objectid
+      delay: 1h
+      value_type: CHAR
+      preprocessing:
+      - type: DISCARD_UNCHANGED_HEARTBEAT
+        parameters:
+        - 12h
+      tags:
+      - tag: component
+        value: inventory
+    - uuid: de4293a5b0954ed39ea9b6596644f20b
+      name: SNMP system name
+      type: SNMP_AGENT
+      snmp_oid: get[1.3.6.1.2.1.1.5.0]
+      key: uisp.system.name
+      delay: 1h
+      value_type: CHAR
+      preprocessing:
+      - type: DISCARD_UNCHANGED_HEARTBEAT
+        parameters:
+        - 12h
+      tags:
+      - tag: component
+        value: inventory
+    - uuid: ae6cf2de4c084229b85e41b0b936379a
+      name: SNMP system location
+      type: SNMP_AGENT
+      snmp_oid: get[1.3.6.1.2.1.1.6.0]
+      key: uisp.system.location
+      delay: 1h
+      value_type: CHAR
+      preprocessing:
+      - type: DISCARD_UNCHANGED_HEARTBEAT
+        parameters:
+        - 12h
+      tags:
+      - tag: component
+        value: inventory
+    - uuid: e2f183a5a7c64fcfab4d11b871df7601
+      name: SNMP system contact
+      type: SNMP_AGENT
+      snmp_oid: get[1.3.6.1.2.1.1.4.0]
+      key: uisp.system.contact
+      delay: 1h
+      value_type: CHAR
+      preprocessing:
+      - type: DISCARD_UNCHANGED_HEARTBEAT
+        parameters:
+        - 12h
+      tags:
+      - tag: component
+        value: inventory
+    - uuid: f9018054192f40819b363b585c71a474
+      name: LTU device model
+      type: SNMP_AGENT
+      snmp_oid: get[1.3.6.1.4.1.41112.1.10.1.3.2.0]
+      key: uisp.ltu.model
+      delay: 10m
+      value_type: CHAR
+      tags:
+      - tag: component
+        value: wireless
+      status: DISABLED
+    - uuid: 3c8329dac46f453e981764ad2bc5dec4
+      name: LTU firmware version
+      type: SNMP_AGENT
+      snmp_oid: get[1.3.6.1.4.1.41112.1.10.1.3.4.0]
+      key: uisp.ltu.firmware
+      delay: 10m
+      value_type: CHAR
+      tags:
+      - tag: component
+        value: wireless
+      status: DISABLED
+    - uuid: d36fd38485d548518dce15c4f2d3b6b4
+      name: LTU memory usage
+      type: SNMP_AGENT
+      snmp_oid: get[1.3.6.1.4.1.41112.1.10.1.3.5.0]
+      key: uisp.ltu.memory
+      delay: 2m
+      units: '%'
+      tags:
+      - tag: component
+        value: wireless
+      status: DISABLED
+    - uuid: f51162e06b114f54a45d0df94004c71f
+      name: LTU CPU usage
+      type: SNMP_AGENT
+      snmp_oid: get[1.3.6.1.4.1.41112.1.10.1.3.6.0]
+      key: uisp.ltu.cpu
+      delay: 2m
+      units: '%'
+      tags:
+      - tag: component
+        value: wireless
+      status: DISABLED
+    - uuid: 0f8a0cf8e8ae4a3d8c23bc52985af1c4
+      name: LTU uptime
+      type: SNMP_AGENT
+      snmp_oid: get[1.3.6.1.4.1.41112.1.10.1.3.7.0]
+      key: uisp.ltu.uptime
+      delay: 2m
+      units: s
+      tags:
+      - tag: component
+        value: wireless
+      status: DISABLED
+    - uuid: f2304d05dd8943f6822dda03ecc77109
+      name: LTU configured frequency
+      type: SNMP_AGENT
+      snmp_oid: get[1.3.6.1.4.1.41112.1.10.1.2.2.0]
+      key: uisp.ltu.frequency
+      delay: 2m
+      units: MHz
+      tags:
+      - tag: component
+        value: wireless
+      status: DISABLED
+    - uuid: fce286f41fe54641bc861614662ed9a1
+      name: LTU configured bandwidth
+      type: SNMP_AGENT
+      snmp_oid: get[1.3.6.1.4.1.41112.1.10.1.2.4.0]
+      key: uisp.ltu.bandwidth
+      delay: 2m
+      units: MHz
+      tags:
+      - tag: component
+        value: wireless
+      status: DISABLED
+    discovery_rules:
+    - uuid: 2845003cdf6a486392e866a34c3f4953
+      name: Network interface discovery (IF-MIB)
+      type: SNMP_AGENT
+      snmp_oid: discovery[{#IFNAME},1.3.6.1.2.1.2.2.1.2,{#IFADMIN},1.3.6.1.2.1.2.2.1.7]
+      key: uisp.if.discovery
+      delay: 1h
+      description: Standard IF-MIB/IF-X-MIB discovery. High-capacity 64-bit counters may be unsupported on older devices;
+        classic 32-bit counters are included as fallback.
+      filter:
+        conditions:
+        - macro: '{#IFNAME}'
+          value: '{$UISP.IF.MATCHES}'
+      item_prototypes:
+      - uuid: d0031eaec4fd4393a4ead39f95d3db57
+        name: 'Interface {#IFNAME}: Operational status'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.2.1.2.2.1.8.{#SNMPINDEX}]
+        key: uisp.if.status[{#SNMPINDEX}]
+        delay: 2m
+        valuemap:
+          name: IF-MIB ifOperStatus
+        tags:
+        - tag: component
+          value: network
+      - uuid: aed09384664c4ffca172e9364649eda9
+        name: 'Interface {#IFNAME}: Admin status'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.2.1.2.2.1.7.{#SNMPINDEX}]
+        key: uisp.if.admin[{#SNMPINDEX}]
+        delay: 5m
+        valuemap:
+          name: IF-MIB ifAdminStatus
+        tags:
+        - tag: component
+          value: network
+      - uuid: e3c4a13b4c1d457c84c350bebe913bbe
+        name: 'Interface {#IFNAME}: Incoming traffic (64-bit)'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.2.1.31.1.1.1.6.{#SNMPINDEX}]
+        key: uisp.if.hc.in[{#SNMPINDEX}]
+        delay: 1m
+        units: bps
+        description: 64-bit IF-MIB high-capacity octet counter, suitable for multi-gigabit uplinks.
+        preprocessing:
+        - type: CHANGE_PER_SECOND
+        - type: MULTIPLIER
+          parameters:
+          - '8'
+        tags:
+        - tag: component
+          value: traffic
+      - uuid: 87b12e4ff4a14dfeb224ebb33885c83e
+        name: 'Interface {#IFNAME}: Outgoing traffic (64-bit)'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.2.1.31.1.1.1.10.{#SNMPINDEX}]
+        key: uisp.if.hc.out[{#SNMPINDEX}]
+        delay: 1m
+        units: bps
+        description: 64-bit IF-MIB high-capacity octet counter, suitable for multi-gigabit uplinks.
+        preprocessing:
+        - type: CHANGE_PER_SECOND
+        - type: MULTIPLIER
+          parameters:
+          - '8'
+        tags:
+        - tag: component
+          value: traffic
+      - uuid: 98d1fb13af5a4f72866657db520dd3be
+        name: 'Interface {#IFNAME}: Incoming traffic (32-bit fallback)'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.2.1.2.2.1.10.{#SNMPINDEX}]
+        key: uisp.if.legacy.in[{#SNMPINDEX}]
+        delay: 1m
+        units: bps
+        description: Counter converted from bytes/s to bits/s. 32-bit counters may wrap at high throughput.
+        preprocessing:
+        - type: CHANGE_PER_SECOND
+        - type: MULTIPLIER
+          parameters:
+          - '8'
+        tags:
+        - tag: component
+          value: traffic
+      - uuid: 6aceccf73838407e91a06ec9aa9663a7
+        name: 'Interface {#IFNAME}: Outgoing traffic (32-bit fallback)'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.2.1.2.2.1.16.{#SNMPINDEX}]
+        key: uisp.if.legacy.out[{#SNMPINDEX}]
+        delay: 1m
+        units: bps
+        description: Counter converted from bytes/s to bits/s. 32-bit counters may wrap at high throughput.
+        preprocessing:
+        - type: CHANGE_PER_SECOND
+        - type: MULTIPLIER
+          parameters:
+          - '8'
+        tags:
+        - tag: component
+          value: traffic
+      - uuid: c5f8fd2fa91c47448b566d758e376cd7
+        name: 'Interface {#IFNAME}: Input errors'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.2.1.2.2.1.14.{#SNMPINDEX}]
+        key: uisp.if.in.errors[{#SNMPINDEX}]
+        delay: 2m
+        units: pps
+        preprocessing:
+        - type: CHANGE_PER_SECOND
+        tags:
+        - tag: component
+          value: errors
+      - uuid: 0e38124b8fbb498393008a147ee79b5a
+        name: 'Interface {#IFNAME}: Output errors'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.2.1.2.2.1.20.{#SNMPINDEX}]
+        key: uisp.if.out.errors[{#SNMPINDEX}]
+        delay: 2m
+        units: pps
+        preprocessing:
+        - type: CHANGE_PER_SECOND
+        tags:
+        - tag: component
+          value: errors
+      - uuid: 3d8ad587b0314a6d89d35ed8d0b1e164
+        name: 'Interface {#IFNAME}: Input discards'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.2.1.2.2.1.13.{#SNMPINDEX}]
+        key: uisp.if.in.discards[{#SNMPINDEX}]
+        delay: 2m
+        units: pps
+        preprocessing:
+        - type: CHANGE_PER_SECOND
+        tags:
+        - tag: component
+          value: errors
+      - uuid: bcd48eec977f432d95c620b287a3f312
+        name: 'Interface {#IFNAME}: Output discards'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.2.1.2.2.1.19.{#SNMPINDEX}]
+        key: uisp.if.out.discards[{#SNMPINDEX}]
+        delay: 2m
+        units: pps
+        preprocessing:
+        - type: CHANGE_PER_SECOND
+        tags:
+        - tag: component
+          value: errors
+      graph_prototypes:
+      - uuid: 3b1b3ac50f5c4adf83710dab3e1df111
+        name: 'Interface {#IFNAME}: Traffic (64-bit)'
+        graph_items:
+        - color: 199C0D
+          item:
+            host: Ubiquiti LTU Extreme-Range by SNMP
+            key: uisp.if.hc.in[{#SNMPINDEX}]
+        - sortorder: '1'
+          color: F63100
+          item:
+            host: Ubiquiti LTU Extreme-Range by SNMP
+            key: uisp.if.hc.out[{#SNMPINDEX}]
+      - uuid: b506b9bc540947daaf41f447246ce2e6
+        name: 'Interface {#IFNAME}: Traffic (32-bit fallback)'
+        graph_items:
+        - color: 199C0D
+          item:
+            host: Ubiquiti LTU Extreme-Range by SNMP
+            key: uisp.if.legacy.in[{#SNMPINDEX}]
+        - sortorder: '1'
+          color: F63100
+          item:
+            host: Ubiquiti LTU Extreme-Range by SNMP
+            key: uisp.if.legacy.out[{#SNMPINDEX}]
+      - uuid: 5509ab90933a4fa5b56ae03d940d05e1
+        name: 'Interface {#IFNAME}: Errors and discards'
+        graph_items:
+        - color: 199C0D
+          item:
+            host: Ubiquiti LTU Extreme-Range by SNMP
+            key: uisp.if.in.errors[{#SNMPINDEX}]
+        - sortorder: '1'
+          color: F63100
+          item:
+            host: Ubiquiti LTU Extreme-Range by SNMP
+            key: uisp.if.out.errors[{#SNMPINDEX}]
+        - sortorder: '2'
+          color: 1A7BC5
+          item:
+            host: Ubiquiti LTU Extreme-Range by SNMP
+            key: uisp.if.in.discards[{#SNMPINDEX}]
+        - sortorder: '3'
+          color: 6C59DC
+          item:
+            host: Ubiquiti LTU Extreme-Range by SNMP
+            key: uisp.if.out.discards[{#SNMPINDEX}]
+      trigger_prototypes:
+      - uuid: 3b8accd78b754f3f9355e4701bb39dee
+        expression: '{$UISP.IF.ALERT:"{#IFNAME}"}=1 and last(/Ubiquiti LTU Extreme-Range by SNMP/uisp.if.status[{#SNMPINDEX}])=2'
+        name: 'LTU Extreme-Range: Interface {#IFNAME} is down'
+        priority: AVERAGE
+        description: Opt-in interface alert. Set contextual {$UISP.IF.ALERT:"<interface>"}=1 for the intended physical uplink
+          only.
+        tags:
+        - tag: scope
+          value: availability
+    - uuid: f85ad1a58a934b4ba69f12cba9a4ce53
+      name: LTU remote station discovery
+      type: SNMP_AGENT
+      snmp_oid: discovery[{#REMOTENAME},1.3.6.1.4.1.41112.1.10.1.4.1.13]
+      key: uisp.ltu.station.discovery
+      delay: 10m
+      description: 'UBNT-AFLTU-MIB remote station table. Table instances are based on station MAC address. DISABLED by default:
+        these UBNT-AFLTU-MIB objects were documented for AF-5XHD, and may not be present on LTU Rocket/clients. Verify with
+        snmpwalk before enabling.'
+      item_prototypes:
+      - uuid: f4c39fcf719e4cf6a4d1d187b0f8eec6
+        name: 'LTU station {#REMOTENAME}: TX capacity'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.4.1.41112.1.10.1.4.1.3.{#SNMPINDEX}]
+        key: uisp.ltu.sta.txcap[{#SNMPINDEX}]
+        delay: 2m
+        tags:
+        - tag: component
+          value: wireless
+        units: Kbps
+      - uuid: fa61a84f9bb8469c9d072dd131c4aec0
+        name: 'LTU station {#REMOTENAME}: RX capacity'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.4.1.41112.1.10.1.4.1.4.{#SNMPINDEX}]
+        key: uisp.ltu.sta.rxcap[{#SNMPINDEX}]
+        delay: 2m
+        tags:
+        - tag: component
+          value: wireless
+        units: Kbps
+      - uuid: fdff6c77f5ec4522bb0a6ab1857c1e5c
+        name: 'LTU station {#REMOTENAME}: RX power chain 0'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.4.1.41112.1.10.1.4.1.5.{#SNMPINDEX}]
+        key: uisp.ltu.sta.rx0[{#SNMPINDEX}]
+        delay: 2m
+        tags:
+        - tag: component
+          value: wireless
+        units: dBm
+      - uuid: 5fafb04492654ab4adb8b5a82e915adb
+        name: 'LTU station {#REMOTENAME}: RX power chain 1'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.4.1.41112.1.10.1.4.1.6.{#SNMPINDEX}]
+        key: uisp.ltu.sta.rx1[{#SNMPINDEX}]
+        delay: 2m
+        tags:
+        - tag: component
+          value: wireless
+        units: dBm
+      - uuid: e88f698fe7434259afe26fa9ce8f7422
+        name: 'LTU station {#REMOTENAME}: Remote latency'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.4.1.41112.1.10.1.4.1.22.{#SNMPINDEX}]
+        key: uisp.ltu.sta.latency[{#SNMPINDEX}]
+        delay: 2m
+        tags:
+        - tag: component
+          value: wireless
+        units: ms
+      - uuid: 735b5610860a4882b6ae7243ac80c4a8
+        name: 'LTU station {#REMOTENAME}: Remote distance'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.4.1.41112.1.10.1.4.1.23.{#SNMPINDEX}]
+        key: uisp.ltu.sta.distance[{#SNMPINDEX}]
+        delay: 2m
+        tags:
+        - tag: component
+          value: wireless
+        units: m
+      graph_prototypes:
+      - uuid: c8bddd9296224ab9b2107fce1d77898a
+        name: 'LTU station {#REMOTENAME}: Capacity'
+        graph_items:
+        - color: 199C0D
+          item:
+            host: Ubiquiti LTU Extreme-Range by SNMP
+            key: uisp.ltu.sta.txcap[{#SNMPINDEX}]
+        - sortorder: '1'
+          color: F63100
+          item:
+            host: Ubiquiti LTU Extreme-Range by SNMP
+            key: uisp.ltu.sta.rxcap[{#SNMPINDEX}]
+      - uuid: 589a9490114b49b0b59138e6c09e2ad9
+        name: 'LTU station {#REMOTENAME}: RX power'
+        graph_items:
+        - color: 199C0D
+          item:
+            host: Ubiquiti LTU Extreme-Range by SNMP
+            key: uisp.ltu.sta.rx0[{#SNMPINDEX}]
+        - sortorder: '1'
+          color: F63100
+          item:
+            host: Ubiquiti LTU Extreme-Range by SNMP
+            key: uisp.ltu.sta.rx1[{#SNMPINDEX}]
+      status: DISABLED
+    tags:
+    - tag: vendor
+      value: Ubiquiti
+    - tag: family
+      value: LTU
+    - tag: model
+      value: LTU-XR
+    - tag: role
+      value: PtMP client / PtP
+    macros:
+    - macro: '{$ICMP.LOSS.WARN}'
+      value: '20'
+      description: Packet-loss percent threshold
+    - macro: '{$ICMP.RTT.WARN}'
+      value: '0.15'
+      description: Round-trip time threshold (seconds)
+    - macro: '{$UISP.IF.MATCHES}'
+      value: .*
+      description: Regex filter for interface descriptions
+    - macro: '{$UISP.IF.ALERT}'
+      value: '0'
+      description: Global interface-down alert is disabled. Use contextual {$UISP.IF.ALERT:"<physical-interface>"}=1 to enable
+        only for intended ports.
+    - macro: '{$UISP.RF.ALERT}'
+      value: '0'
+      description: Enable RF-link-down trigger only after confirming the private MIB/profile works on this device/firmware.
+    valuemaps:
+    - uuid: fed76042b44b4819be80a732f5d0b1d6
+      name: IF-MIB ifOperStatus
+      mappings:
+      - value: '1'
+        newvalue: up
+      - value: '2'
+        newvalue: down
+      - value: '3'
+        newvalue: testing
+      - value: '4'
+        newvalue: unknown
+      - value: '5'
+        newvalue: dormant
+      - value: '6'
+        newvalue: notPresent
+      - value: '7'
+        newvalue: lowerLayerDown
+    - uuid: f7f8e8e9d2a94112944adcaa6b9d9c5a
+      name: IF-MIB ifAdminStatus
+      mappings:
+      - value: '1'
+        newvalue: up
+      - value: '2'
+        newvalue: down
+      - value: '3'
+        newvalue: testing
+  graphs:
+  - uuid: 191511091ba747ada6f406935f32eb36
+    name: 'LTU Extreme-Range: ICMP latency'
+    graph_items:
+    - color: 199C0D
+      item:
+        host: Ubiquiti LTU Extreme-Range by SNMP
+        key: icmppingsec
+  - uuid: c1bc00172d6542df94a7b1c14c6e2751
+    name: 'LTU Extreme-Range: ICMP packet loss'
+    graph_items:
+    - color: 199C0D
+      item:
+        host: Ubiquiti LTU Extreme-Range by SNMP
+        key: icmppingloss
+  - uuid: cf1d223e795b43769dd2baa45756aea6
+    name: 'LTU Extreme-Range: SNMP agent uptime'
+    graph_items:
+    - color: 199C0D
+      item:
+        host: Ubiquiti LTU Extreme-Range by SNMP
+        key: uisp.system.uptime

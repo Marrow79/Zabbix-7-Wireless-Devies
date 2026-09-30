@@ -1,0 +1,546 @@
+zabbix_export:
+  version: '7.0'
+  template_groups:
+  - uuid: 36bff6c29af64692839d077febfc7079
+    name: Templates/Network devices
+  templates:
+  - uuid: 2d645bc9981c4876b0c67d9f6774ba68
+    template: Ubiquiti airFiber 24 by SNMP
+    name: Ubiquiti airFiber 24 by SNMP
+    description: 'Zabbix 7.0.30 template for Ubiquiti airFiber 24 (AF-24). Role: PtP. SNMP assessment: Yes. airFiber software/user
+      documentation includes an SNMP agent; AF-5XHD uses the distinct UBNT-AFLTU-MIB; other listed radios use legacy UBNT-AirFIBER-MIB
+      conditionally. Private MIB objects vary by airFiber platform/firmware; template keeps standard MIB interface monitoring
+      plus legacy airFiber status LLD. SNMP credentials/interface are configured at the Zabbix host, not in this template.'
+    groups:
+    - name: Templates/Network devices
+    items:
+    - uuid: f0e01b73fd314570ae5bc486e0849acc
+      name: ICMP ping
+      type: SIMPLE
+      key: icmpping
+      delay: 1m
+      history: 7d
+      tags:
+      - tag: component
+        value: health
+      triggers:
+      - uuid: 087ceae43dff44f79a7f092bf411614e
+        expression: max(/Ubiquiti airFiber 24 by SNMP/icmpping,#3)=0
+        name: 'airFiber 24: Unavailable by ICMP ping'
+        priority: HIGH
+        description: Three consecutive ICMP checks failed.
+        tags:
+        - tag: scope
+          value: availability
+    - uuid: a6011db462c04d45a2141d24e5837169
+      name: ICMP packet loss
+      type: SIMPLE
+      key: icmppingloss
+      delay: 1m
+      value_type: FLOAT
+      units: '%'
+      tags:
+      - tag: component
+        value: health
+      triggers:
+      - uuid: 1d87ee973e1f4e1b83aaa27698b559b5
+        expression: min(/Ubiquiti airFiber 24 by SNMP/icmppingloss,5m)>{$ICMP.LOSS.WARN} and min(/Ubiquiti airFiber 24 by
+          SNMP/icmppingloss,5m)<100
+        name: 'airFiber 24: High ICMP packet loss'
+        priority: WARNING
+        description: Packet loss exceeded the warning threshold for 5 minutes.
+        tags:
+        - tag: scope
+          value: performance
+    - uuid: a5384de729114db4bb020bc11c7d63cc
+      name: ICMP response time
+      type: SIMPLE
+      key: icmppingsec
+      delay: 1m
+      value_type: FLOAT
+      units: s
+      tags:
+      - tag: component
+        value: health
+      triggers:
+      - uuid: eff721924d7643c996f170fc0e50c054
+        expression: avg(/Ubiquiti airFiber 24 by SNMP/icmppingsec,5m)>{$ICMP.RTT.WARN}
+        name: 'airFiber 24: High ICMP response time'
+        priority: WARNING
+        description: Average round-trip time exceeded threshold for 5 minutes.
+        tags:
+        - tag: scope
+          value: performance
+    - uuid: b0daf522726e414f8e0bf9b24b04cacd
+      name: SNMP network uptime
+      type: SNMP_AGENT
+      snmp_oid: get[1.3.6.1.2.1.1.3.0]
+      key: uisp.system.uptime
+      delay: 1m
+      units: uptime
+      description: sysUpTime (TimeTicks / 100); measures SNMP agent uptime, not guaranteed hardware uptime.
+      preprocessing:
+      - type: MULTIPLIER
+        parameters:
+        - '0.01'
+      tags:
+      - tag: component
+        value: health
+      triggers:
+      - uuid: 27c7ea3a6f634d708723c39aeccf4979
+        expression: nodata(/Ubiquiti airFiber 24 by SNMP/uisp.system.uptime,15m)=1 and last(/Ubiquiti airFiber 24 by SNMP/icmpping)=1
+        name: 'airFiber 24: SNMP stops responding while ping succeeds'
+        priority: AVERAGE
+        description: Device replies to ping but sysUpTime polling has had no data for 15 minutes; check SNMP credentials/firewall.
+        tags:
+        - tag: scope
+          value: availability
+    - uuid: 99864ffdb2614f5bbd953774618afae1
+      name: SNMP system description
+      type: SNMP_AGENT
+      snmp_oid: get[1.3.6.1.2.1.1.1.0]
+      key: uisp.system.description
+      delay: 1h
+      value_type: CHAR
+      preprocessing:
+      - type: DISCARD_UNCHANGED_HEARTBEAT
+        parameters:
+        - 12h
+      tags:
+      - tag: component
+        value: inventory
+    - uuid: 6492edc69ad44bb6b3b4acd1341892ae
+      name: SNMP system object ID
+      type: SNMP_AGENT
+      snmp_oid: get[1.3.6.1.2.1.1.2.0]
+      key: uisp.system.objectid
+      delay: 1h
+      value_type: CHAR
+      preprocessing:
+      - type: DISCARD_UNCHANGED_HEARTBEAT
+        parameters:
+        - 12h
+      tags:
+      - tag: component
+        value: inventory
+    - uuid: 63f52097b9fc4e758ab100a3cba14b1c
+      name: SNMP system name
+      type: SNMP_AGENT
+      snmp_oid: get[1.3.6.1.2.1.1.5.0]
+      key: uisp.system.name
+      delay: 1h
+      value_type: CHAR
+      preprocessing:
+      - type: DISCARD_UNCHANGED_HEARTBEAT
+        parameters:
+        - 12h
+      tags:
+      - tag: component
+        value: inventory
+    - uuid: 52fd27f6a22649e683d087767eabcde6
+      name: SNMP system location
+      type: SNMP_AGENT
+      snmp_oid: get[1.3.6.1.2.1.1.6.0]
+      key: uisp.system.location
+      delay: 1h
+      value_type: CHAR
+      preprocessing:
+      - type: DISCARD_UNCHANGED_HEARTBEAT
+        parameters:
+        - 12h
+      tags:
+      - tag: component
+        value: inventory
+    - uuid: 0317ee5849e84034916b09cab44542a8
+      name: SNMP system contact
+      type: SNMP_AGENT
+      snmp_oid: get[1.3.6.1.2.1.1.4.0]
+      key: uisp.system.contact
+      delay: 1h
+      value_type: CHAR
+      preprocessing:
+      - type: DISCARD_UNCHANGED_HEARTBEAT
+        parameters:
+        - 12h
+      tags:
+      - tag: component
+        value: inventory
+    discovery_rules:
+    - uuid: 9efe3a34586948a48f7d14bc62ad6c3e
+      name: Network interface discovery (IF-MIB)
+      type: SNMP_AGENT
+      snmp_oid: discovery[{#IFNAME},1.3.6.1.2.1.2.2.1.2,{#IFADMIN},1.3.6.1.2.1.2.2.1.7]
+      key: uisp.if.discovery
+      delay: 1h
+      description: Standard IF-MIB/IF-X-MIB discovery. High-capacity 64-bit counters may be unsupported on older devices;
+        classic 32-bit counters are included as fallback.
+      filter:
+        conditions:
+        - macro: '{#IFNAME}'
+          value: '{$UISP.IF.MATCHES}'
+      item_prototypes:
+      - uuid: 43ce94adca8c417e883305ea00c586fe
+        name: 'Interface {#IFNAME}: Operational status'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.2.1.2.2.1.8.{#SNMPINDEX}]
+        key: uisp.if.status[{#SNMPINDEX}]
+        delay: 2m
+        valuemap:
+          name: IF-MIB ifOperStatus
+        tags:
+        - tag: component
+          value: network
+      - uuid: c8af19c64164419f8487e19241015aa1
+        name: 'Interface {#IFNAME}: Admin status'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.2.1.2.2.1.7.{#SNMPINDEX}]
+        key: uisp.if.admin[{#SNMPINDEX}]
+        delay: 5m
+        valuemap:
+          name: IF-MIB ifAdminStatus
+        tags:
+        - tag: component
+          value: network
+      - uuid: d7ef3b3ec43d4e9ca34df17821be5b46
+        name: 'Interface {#IFNAME}: Incoming traffic (64-bit)'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.2.1.31.1.1.1.6.{#SNMPINDEX}]
+        key: uisp.if.hc.in[{#SNMPINDEX}]
+        delay: 1m
+        units: bps
+        description: 64-bit IF-MIB high-capacity octet counter, suitable for multi-gigabit uplinks.
+        preprocessing:
+        - type: CHANGE_PER_SECOND
+        - type: MULTIPLIER
+          parameters:
+          - '8'
+        tags:
+        - tag: component
+          value: traffic
+      - uuid: 31266849cd84421ba70442a573df1a99
+        name: 'Interface {#IFNAME}: Outgoing traffic (64-bit)'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.2.1.31.1.1.1.10.{#SNMPINDEX}]
+        key: uisp.if.hc.out[{#SNMPINDEX}]
+        delay: 1m
+        units: bps
+        description: 64-bit IF-MIB high-capacity octet counter, suitable for multi-gigabit uplinks.
+        preprocessing:
+        - type: CHANGE_PER_SECOND
+        - type: MULTIPLIER
+          parameters:
+          - '8'
+        tags:
+        - tag: component
+          value: traffic
+      - uuid: fe6531cd006642ffba83c44ac171158a
+        name: 'Interface {#IFNAME}: Incoming traffic (32-bit fallback)'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.2.1.2.2.1.10.{#SNMPINDEX}]
+        key: uisp.if.legacy.in[{#SNMPINDEX}]
+        delay: 1m
+        units: bps
+        description: Counter converted from bytes/s to bits/s. 32-bit counters may wrap at high throughput.
+        preprocessing:
+        - type: CHANGE_PER_SECOND
+        - type: MULTIPLIER
+          parameters:
+          - '8'
+        tags:
+        - tag: component
+          value: traffic
+      - uuid: 23c8220c1943441fb2a47322b631d3bd
+        name: 'Interface {#IFNAME}: Outgoing traffic (32-bit fallback)'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.2.1.2.2.1.16.{#SNMPINDEX}]
+        key: uisp.if.legacy.out[{#SNMPINDEX}]
+        delay: 1m
+        units: bps
+        description: Counter converted from bytes/s to bits/s. 32-bit counters may wrap at high throughput.
+        preprocessing:
+        - type: CHANGE_PER_SECOND
+        - type: MULTIPLIER
+          parameters:
+          - '8'
+        tags:
+        - tag: component
+          value: traffic
+      - uuid: b4262dd5b67345d8a0c2ff7dc12b44e8
+        name: 'Interface {#IFNAME}: Input errors'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.2.1.2.2.1.14.{#SNMPINDEX}]
+        key: uisp.if.in.errors[{#SNMPINDEX}]
+        delay: 2m
+        units: pps
+        preprocessing:
+        - type: CHANGE_PER_SECOND
+        tags:
+        - tag: component
+          value: errors
+      - uuid: 2f1b16afc7d945d1bffc60245fa766ac
+        name: 'Interface {#IFNAME}: Output errors'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.2.1.2.2.1.20.{#SNMPINDEX}]
+        key: uisp.if.out.errors[{#SNMPINDEX}]
+        delay: 2m
+        units: pps
+        preprocessing:
+        - type: CHANGE_PER_SECOND
+        tags:
+        - tag: component
+          value: errors
+      - uuid: c42522a085374d94b8f77223d1eea3d6
+        name: 'Interface {#IFNAME}: Input discards'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.2.1.2.2.1.13.{#SNMPINDEX}]
+        key: uisp.if.in.discards[{#SNMPINDEX}]
+        delay: 2m
+        units: pps
+        preprocessing:
+        - type: CHANGE_PER_SECOND
+        tags:
+        - tag: component
+          value: errors
+      - uuid: 63e137646df94a27bdab301d1b7a47a1
+        name: 'Interface {#IFNAME}: Output discards'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.2.1.2.2.1.19.{#SNMPINDEX}]
+        key: uisp.if.out.discards[{#SNMPINDEX}]
+        delay: 2m
+        units: pps
+        preprocessing:
+        - type: CHANGE_PER_SECOND
+        tags:
+        - tag: component
+          value: errors
+      graph_prototypes:
+      - uuid: db5934ef13934479a3cb219a3a3e6111
+        name: 'Interface {#IFNAME}: Traffic (64-bit)'
+        graph_items:
+        - color: 199C0D
+          item:
+            host: Ubiquiti airFiber 24 by SNMP
+            key: uisp.if.hc.in[{#SNMPINDEX}]
+        - sortorder: '1'
+          color: F63100
+          item:
+            host: Ubiquiti airFiber 24 by SNMP
+            key: uisp.if.hc.out[{#SNMPINDEX}]
+      - uuid: a230c128b83a469fbbd9af64711c031b
+        name: 'Interface {#IFNAME}: Traffic (32-bit fallback)'
+        graph_items:
+        - color: 199C0D
+          item:
+            host: Ubiquiti airFiber 24 by SNMP
+            key: uisp.if.legacy.in[{#SNMPINDEX}]
+        - sortorder: '1'
+          color: F63100
+          item:
+            host: Ubiquiti airFiber 24 by SNMP
+            key: uisp.if.legacy.out[{#SNMPINDEX}]
+      - uuid: ee4d0cb5a9e0462583623ec0b2990cae
+        name: 'Interface {#IFNAME}: Errors and discards'
+        graph_items:
+        - color: 199C0D
+          item:
+            host: Ubiquiti airFiber 24 by SNMP
+            key: uisp.if.in.errors[{#SNMPINDEX}]
+        - sortorder: '1'
+          color: F63100
+          item:
+            host: Ubiquiti airFiber 24 by SNMP
+            key: uisp.if.out.errors[{#SNMPINDEX}]
+        - sortorder: '2'
+          color: 1A7BC5
+          item:
+            host: Ubiquiti airFiber 24 by SNMP
+            key: uisp.if.in.discards[{#SNMPINDEX}]
+        - sortorder: '3'
+          color: 6C59DC
+          item:
+            host: Ubiquiti airFiber 24 by SNMP
+            key: uisp.if.out.discards[{#SNMPINDEX}]
+      trigger_prototypes:
+      - uuid: 28c3a40bb31846a18598da56af107421
+        expression: '{$UISP.IF.ALERT:"{#IFNAME}"}=1 and last(/Ubiquiti airFiber 24 by SNMP/uisp.if.status[{#SNMPINDEX}])=2'
+        name: 'airFiber 24: Interface {#IFNAME} is down'
+        priority: AVERAGE
+        description: Opt-in interface alert. Set contextual {$UISP.IF.ALERT:"<interface>"}=1 for the intended physical uplink
+          only.
+        tags:
+        - tag: scope
+          value: availability
+    - uuid: 733aa72ba07e430888f241654f392b6b
+      name: airFiber RF link discovery
+      type: SNMP_AGENT
+      snmp_oid: discovery[{#RFSTATE},1.3.6.1.4.1.41112.1.3.2.1.26]
+      key: uisp.airfiber.link.discovery
+      delay: 5m
+      description: Legacy UBNT-AirFIBER-MIB status table; profile may not apply to every newer airFiber firmware.
+      item_prototypes:
+      - uuid: ca59cd4811484f1d8e45cf772525e9f4
+        name: airFiber RF link state
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.4.1.41112.1.3.2.1.26.{#SNMPINDEX}]
+        key: uisp.af.link.state[{#SNMPINDEX}]
+        delay: 2m
+        tags:
+        - tag: component
+          value: wireless
+      - uuid: 26c5df1c8f5444df8b1ce09e2b907e41
+        name: airFiber RX capacity
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.4.1.41112.1.3.2.1.5.{#SNMPINDEX}]
+        key: uisp.af.rx.capacity[{#SNMPINDEX}]
+        delay: 2m
+        tags:
+        - tag: component
+          value: wireless
+        units: bps
+      - uuid: a96d9ebe1b3449b581c2e9f17dc34ec4
+        name: airFiber TX capacity
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.4.1.41112.1.3.2.1.6.{#SNMPINDEX}]
+        key: uisp.af.tx.capacity[{#SNMPINDEX}]
+        delay: 2m
+        tags:
+        - tag: component
+          value: wireless
+        units: bps
+      - uuid: 8c77b269a201462193895c18dbe5a700
+        name: airFiber RX power chain 0
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.4.1.41112.1.3.2.1.11.{#SNMPINDEX}]
+        key: uisp.af.rxpower0[{#SNMPINDEX}]
+        delay: 2m
+        tags:
+        - tag: component
+          value: wireless
+        units: dBm
+      - uuid: 5f3404e4de5248c3bed4dd50524c165f
+        name: airFiber RX power chain 1
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.4.1.41112.1.3.2.1.14.{#SNMPINDEX}]
+        key: uisp.af.rxpower1[{#SNMPINDEX}]
+        delay: 2m
+        tags:
+        - tag: component
+          value: wireless
+        units: dBm
+      - uuid: d288ae655ed64730b23f39f54446224e
+        name: airFiber link distance
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.4.1.41112.1.3.2.1.4.{#SNMPINDEX}]
+        key: uisp.af.distance[{#SNMPINDEX}]
+        delay: 2m
+        tags:
+        - tag: component
+          value: wireless
+        units: m
+      trigger_prototypes:
+      - uuid: cffbcfc1dbe54cdc8e42ae6ec7bc1678
+        expression: '{$UISP.RF.ALERT}=1 and max(/Ubiquiti airFiber 24 by SNMP/uisp.af.link.state[{#SNMPINDEX}],#3)=0'
+        name: 'airFiber 24: RF link is down'
+        priority: HIGH
+        description: Disabled by default through {$UISP.RF.ALERT}=0. Enable after verifying the private airFiber MIB on this
+          firmware.
+      graph_prototypes:
+      - uuid: 21c9a9e89f98431696804871fcd740c6
+        name: airFiber RF capacity
+        graph_items:
+        - color: 199C0D
+          item:
+            host: Ubiquiti airFiber 24 by SNMP
+            key: uisp.af.rx.capacity[{#SNMPINDEX}]
+        - sortorder: '1'
+          color: F63100
+          item:
+            host: Ubiquiti airFiber 24 by SNMP
+            key: uisp.af.tx.capacity[{#SNMPINDEX}]
+      - uuid: 41fedd4bd67f46b68e6fb5612ca9ed9b
+        name: airFiber RX power
+        graph_items:
+        - color: 199C0D
+          item:
+            host: Ubiquiti airFiber 24 by SNMP
+            key: uisp.af.rxpower0[{#SNMPINDEX}]
+        - sortorder: '1'
+          color: F63100
+          item:
+            host: Ubiquiti airFiber 24 by SNMP
+            key: uisp.af.rxpower1[{#SNMPINDEX}]
+    tags:
+    - tag: vendor
+      value: Ubiquiti
+    - tag: family
+      value: airFiber
+    - tag: model
+      value: AF-24
+    - tag: role
+      value: PtP
+    macros:
+    - macro: '{$ICMP.LOSS.WARN}'
+      value: '20'
+      description: Packet-loss percent threshold
+    - macro: '{$ICMP.RTT.WARN}'
+      value: '0.15'
+      description: Round-trip time threshold (seconds)
+    - macro: '{$UISP.IF.MATCHES}'
+      value: .*
+      description: Regex filter for interface descriptions
+    - macro: '{$UISP.IF.ALERT}'
+      value: '0'
+      description: Global interface-down alert is disabled. Use contextual {$UISP.IF.ALERT:"<physical-interface>"}=1 to enable
+        only for intended ports.
+    - macro: '{$UISP.RF.ALERT}'
+      value: '0'
+      description: Enable RF-link-down trigger only after confirming the private MIB/profile works on this device/firmware.
+    valuemaps:
+    - uuid: 59523d105369411eb13dc84f4ef5bec9
+      name: IF-MIB ifOperStatus
+      mappings:
+      - value: '1'
+        newvalue: up
+      - value: '2'
+        newvalue: down
+      - value: '3'
+        newvalue: testing
+      - value: '4'
+        newvalue: unknown
+      - value: '5'
+        newvalue: dormant
+      - value: '6'
+        newvalue: notPresent
+      - value: '7'
+        newvalue: lowerLayerDown
+    - uuid: b1bc51084ca449918bd662858aebfa01
+      name: IF-MIB ifAdminStatus
+      mappings:
+      - value: '1'
+        newvalue: up
+      - value: '2'
+        newvalue: down
+      - value: '3'
+        newvalue: testing
+  graphs:
+  - uuid: 52cfcb8f087e456b9ec46611834a63be
+    name: 'airFiber 24: ICMP latency'
+    graph_items:
+    - color: 199C0D
+      item:
+        host: Ubiquiti airFiber 24 by SNMP
+        key: icmppingsec
+  - uuid: e08cee8afed4496fae43f3b6ddd4409b
+    name: 'airFiber 24: ICMP packet loss'
+    graph_items:
+    - color: 199C0D
+      item:
+        host: Ubiquiti airFiber 24 by SNMP
+        key: icmppingloss
+  - uuid: fcd1a45359284497817ec0ba920c8510
+    name: 'airFiber 24: SNMP agent uptime'
+    graph_items:
+    - color: 199C0D
+      item:
+        host: Ubiquiti airFiber 24 by SNMP
+        key: uisp.system.uptime

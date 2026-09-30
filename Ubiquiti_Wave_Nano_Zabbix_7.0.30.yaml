@@ -1,0 +1,622 @@
+zabbix_export:
+  version: '7.0'
+  template_groups:
+  - uuid: 36bff6c29af64692839d077febfc7079
+    name: Templates/Network devices
+  templates:
+  - uuid: d4bbb878ec8f43e9bb9230c95104faef
+    template: Ubiquiti Wave Nano by SNMP
+    name: Ubiquiti Wave Nano by SNMP
+    description: 'Zabbix 7.0.30 template for Ubiquiti Wave Nano (Wave-Nano). Role: PtMP station. SNMP assessment: Yes. Wave
+      product tech specs list SNMP. UI-AF60-MIB is included as a best-effort private metric profile. AF60 private OID coverage
+      on Wave firmware is not guaranteed; standard SNMP and IF-MIB remain available where exposed. SNMP credentials/interface
+      are configured at the Zabbix host, not in this template.'
+    groups:
+    - name: Templates/Network devices
+    items:
+    - uuid: fda3c545e2034513b515ce71faa734fa
+      name: ICMP ping
+      type: SIMPLE
+      key: icmpping
+      delay: 1m
+      history: 7d
+      tags:
+      - tag: component
+        value: health
+      triggers:
+      - uuid: 2fc1767c4b1d4969a4f3b7321b0b9a92
+        expression: max(/Ubiquiti Wave Nano by SNMP/icmpping,#3)=0
+        name: 'Wave Nano: Unavailable by ICMP ping'
+        priority: HIGH
+        description: Three consecutive ICMP checks failed.
+        tags:
+        - tag: scope
+          value: availability
+    - uuid: 4ee30b43fcaf4c4daee5a7bb9a9956fe
+      name: ICMP packet loss
+      type: SIMPLE
+      key: icmppingloss
+      delay: 1m
+      value_type: FLOAT
+      units: '%'
+      tags:
+      - tag: component
+        value: health
+      triggers:
+      - uuid: 07397ab7d7f54f4094562ee3e54a5d5f
+        expression: min(/Ubiquiti Wave Nano by SNMP/icmppingloss,5m)>{$ICMP.LOSS.WARN} and min(/Ubiquiti Wave Nano by SNMP/icmppingloss,5m)<100
+        name: 'Wave Nano: High ICMP packet loss'
+        priority: WARNING
+        description: Packet loss exceeded the warning threshold for 5 minutes.
+        tags:
+        - tag: scope
+          value: performance
+    - uuid: f27e2304c558461ab65fdf200867c923
+      name: ICMP response time
+      type: SIMPLE
+      key: icmppingsec
+      delay: 1m
+      value_type: FLOAT
+      units: s
+      tags:
+      - tag: component
+        value: health
+      triggers:
+      - uuid: b5a52e8f378b4215a037d7494ff398b6
+        expression: avg(/Ubiquiti Wave Nano by SNMP/icmppingsec,5m)>{$ICMP.RTT.WARN}
+        name: 'Wave Nano: High ICMP response time'
+        priority: WARNING
+        description: Average round-trip time exceeded threshold for 5 minutes.
+        tags:
+        - tag: scope
+          value: performance
+    - uuid: 0175849f76e04e0797563533dbfcc997
+      name: SNMP network uptime
+      type: SNMP_AGENT
+      snmp_oid: get[1.3.6.1.2.1.1.3.0]
+      key: uisp.system.uptime
+      delay: 1m
+      units: uptime
+      description: sysUpTime (TimeTicks / 100); measures SNMP agent uptime, not guaranteed hardware uptime.
+      preprocessing:
+      - type: MULTIPLIER
+        parameters:
+        - '0.01'
+      tags:
+      - tag: component
+        value: health
+      triggers:
+      - uuid: 370785361c1946b498e08eab3b4cdc3c
+        expression: nodata(/Ubiquiti Wave Nano by SNMP/uisp.system.uptime,15m)=1 and last(/Ubiquiti Wave Nano by SNMP/icmpping)=1
+        name: 'Wave Nano: SNMP stops responding while ping succeeds'
+        priority: AVERAGE
+        description: Device replies to ping but sysUpTime polling has had no data for 15 minutes; check SNMP credentials/firewall.
+        tags:
+        - tag: scope
+          value: availability
+    - uuid: 665bf1a0002f4b94af08b19796599a29
+      name: SNMP system description
+      type: SNMP_AGENT
+      snmp_oid: get[1.3.6.1.2.1.1.1.0]
+      key: uisp.system.description
+      delay: 1h
+      value_type: CHAR
+      preprocessing:
+      - type: DISCARD_UNCHANGED_HEARTBEAT
+        parameters:
+        - 12h
+      tags:
+      - tag: component
+        value: inventory
+    - uuid: 04d6990fc7254de38c5a241540eae5dc
+      name: SNMP system object ID
+      type: SNMP_AGENT
+      snmp_oid: get[1.3.6.1.2.1.1.2.0]
+      key: uisp.system.objectid
+      delay: 1h
+      value_type: CHAR
+      preprocessing:
+      - type: DISCARD_UNCHANGED_HEARTBEAT
+        parameters:
+        - 12h
+      tags:
+      - tag: component
+        value: inventory
+    - uuid: b2d7271870fb4c15b7b6ad60833c50c0
+      name: SNMP system name
+      type: SNMP_AGENT
+      snmp_oid: get[1.3.6.1.2.1.1.5.0]
+      key: uisp.system.name
+      delay: 1h
+      value_type: CHAR
+      preprocessing:
+      - type: DISCARD_UNCHANGED_HEARTBEAT
+        parameters:
+        - 12h
+      tags:
+      - tag: component
+        value: inventory
+    - uuid: c4599aa3e70545d9acfe605c83153901
+      name: SNMP system location
+      type: SNMP_AGENT
+      snmp_oid: get[1.3.6.1.2.1.1.6.0]
+      key: uisp.system.location
+      delay: 1h
+      value_type: CHAR
+      preprocessing:
+      - type: DISCARD_UNCHANGED_HEARTBEAT
+        parameters:
+        - 12h
+      tags:
+      - tag: component
+        value: inventory
+    - uuid: 2a2a3da218814eaca0ef4e883f430b6c
+      name: SNMP system contact
+      type: SNMP_AGENT
+      snmp_oid: get[1.3.6.1.2.1.1.4.0]
+      key: uisp.system.contact
+      delay: 1h
+      value_type: CHAR
+      preprocessing:
+      - type: DISCARD_UNCHANGED_HEARTBEAT
+        parameters:
+        - 12h
+      tags:
+      - tag: component
+        value: inventory
+    - uuid: fafd491e19b54a7ebf3b79e3592358a8
+      name: AF60/Wave device model
+      type: SNMP_AGENT
+      snmp_oid: get[1.3.6.1.4.1.41112.1.11.1.2.2.0]
+      key: uisp.af60.model
+      delay: 10m
+      value_type: CHAR
+      tags:
+      - tag: component
+        value: wireless
+    - uuid: d3ee5723412f43258a7370e9c88828f3
+      name: AF60/Wave firmware version
+      type: SNMP_AGENT
+      snmp_oid: get[1.3.6.1.4.1.41112.1.11.1.2.4.0]
+      key: uisp.af60.firmware
+      delay: 10m
+      value_type: CHAR
+      tags:
+      - tag: component
+        value: wireless
+    - uuid: c29b1c74f00546958d566f77076f97d8
+      name: AF60/Wave memory usage
+      type: SNMP_AGENT
+      snmp_oid: get[1.3.6.1.4.1.41112.1.11.1.2.5.0]
+      key: uisp.af60.memory
+      delay: 2m
+      units: '%'
+      tags:
+      - tag: component
+        value: wireless
+    - uuid: 19df272be8314ee88049b7969944efb3
+      name: AF60/Wave CPU usage
+      type: SNMP_AGENT
+      snmp_oid: get[1.3.6.1.4.1.41112.1.11.1.2.6.0]
+      key: uisp.af60.cpu
+      delay: 2m
+      units: '%'
+      tags:
+      - tag: component
+        value: wireless
+    - uuid: 2496dff877474444b659e75849aacd8a
+      name: AF60/Wave configured frequency
+      type: SNMP_AGENT
+      snmp_oid: get[1.3.6.1.4.1.41112.1.11.1.1.2.0]
+      key: uisp.af60.frequency
+      delay: 2m
+      units: MHz
+      tags:
+      - tag: component
+        value: wireless
+    discovery_rules:
+    - uuid: b7f89b991ec349e988aeffbc646a8876
+      name: Network interface discovery (IF-MIB)
+      type: SNMP_AGENT
+      snmp_oid: discovery[{#IFNAME},1.3.6.1.2.1.2.2.1.2,{#IFADMIN},1.3.6.1.2.1.2.2.1.7]
+      key: uisp.if.discovery
+      delay: 1h
+      description: Standard IF-MIB/IF-X-MIB discovery. High-capacity 64-bit counters may be unsupported on older devices;
+        classic 32-bit counters are included as fallback.
+      filter:
+        conditions:
+        - macro: '{#IFNAME}'
+          value: '{$UISP.IF.MATCHES}'
+      item_prototypes:
+      - uuid: fee6cb52634d4362b86ba6d2dfbb0838
+        name: 'Interface {#IFNAME}: Operational status'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.2.1.2.2.1.8.{#SNMPINDEX}]
+        key: uisp.if.status[{#SNMPINDEX}]
+        delay: 2m
+        valuemap:
+          name: IF-MIB ifOperStatus
+        tags:
+        - tag: component
+          value: network
+      - uuid: 38a834b050f74389b0c7b00882c69033
+        name: 'Interface {#IFNAME}: Admin status'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.2.1.2.2.1.7.{#SNMPINDEX}]
+        key: uisp.if.admin[{#SNMPINDEX}]
+        delay: 5m
+        valuemap:
+          name: IF-MIB ifAdminStatus
+        tags:
+        - tag: component
+          value: network
+      - uuid: 4e4dfcb3f3bc442ca16d697aa38d0ec3
+        name: 'Interface {#IFNAME}: Incoming traffic (64-bit)'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.2.1.31.1.1.1.6.{#SNMPINDEX}]
+        key: uisp.if.hc.in[{#SNMPINDEX}]
+        delay: 1m
+        units: bps
+        description: 64-bit IF-MIB high-capacity octet counter, suitable for multi-gigabit uplinks.
+        preprocessing:
+        - type: CHANGE_PER_SECOND
+        - type: MULTIPLIER
+          parameters:
+          - '8'
+        tags:
+        - tag: component
+          value: traffic
+      - uuid: 6dbe1d2c035e4bbfb2b731aa56da00c6
+        name: 'Interface {#IFNAME}: Outgoing traffic (64-bit)'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.2.1.31.1.1.1.10.{#SNMPINDEX}]
+        key: uisp.if.hc.out[{#SNMPINDEX}]
+        delay: 1m
+        units: bps
+        description: 64-bit IF-MIB high-capacity octet counter, suitable for multi-gigabit uplinks.
+        preprocessing:
+        - type: CHANGE_PER_SECOND
+        - type: MULTIPLIER
+          parameters:
+          - '8'
+        tags:
+        - tag: component
+          value: traffic
+      - uuid: b8b63d8aac36427692637d7ce76c740e
+        name: 'Interface {#IFNAME}: Incoming traffic (32-bit fallback)'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.2.1.2.2.1.10.{#SNMPINDEX}]
+        key: uisp.if.legacy.in[{#SNMPINDEX}]
+        delay: 1m
+        units: bps
+        description: Counter converted from bytes/s to bits/s. 32-bit counters may wrap at high throughput.
+        preprocessing:
+        - type: CHANGE_PER_SECOND
+        - type: MULTIPLIER
+          parameters:
+          - '8'
+        tags:
+        - tag: component
+          value: traffic
+      - uuid: 1fafa27b28b847dbbe4684d87af764a7
+        name: 'Interface {#IFNAME}: Outgoing traffic (32-bit fallback)'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.2.1.2.2.1.16.{#SNMPINDEX}]
+        key: uisp.if.legacy.out[{#SNMPINDEX}]
+        delay: 1m
+        units: bps
+        description: Counter converted from bytes/s to bits/s. 32-bit counters may wrap at high throughput.
+        preprocessing:
+        - type: CHANGE_PER_SECOND
+        - type: MULTIPLIER
+          parameters:
+          - '8'
+        tags:
+        - tag: component
+          value: traffic
+      - uuid: 8f0d948d4dd6488f8d009787e3553b70
+        name: 'Interface {#IFNAME}: Input errors'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.2.1.2.2.1.14.{#SNMPINDEX}]
+        key: uisp.if.in.errors[{#SNMPINDEX}]
+        delay: 2m
+        units: pps
+        preprocessing:
+        - type: CHANGE_PER_SECOND
+        tags:
+        - tag: component
+          value: errors
+      - uuid: 36e9b235e8b74f028feffdf6c46f3c0c
+        name: 'Interface {#IFNAME}: Output errors'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.2.1.2.2.1.20.{#SNMPINDEX}]
+        key: uisp.if.out.errors[{#SNMPINDEX}]
+        delay: 2m
+        units: pps
+        preprocessing:
+        - type: CHANGE_PER_SECOND
+        tags:
+        - tag: component
+          value: errors
+      - uuid: bcf9dcff17634100882ddb5b77c9b848
+        name: 'Interface {#IFNAME}: Input discards'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.2.1.2.2.1.13.{#SNMPINDEX}]
+        key: uisp.if.in.discards[{#SNMPINDEX}]
+        delay: 2m
+        units: pps
+        preprocessing:
+        - type: CHANGE_PER_SECOND
+        tags:
+        - tag: component
+          value: errors
+      - uuid: 2804787ae194466b8f17bffdf07062f1
+        name: 'Interface {#IFNAME}: Output discards'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.2.1.2.2.1.19.{#SNMPINDEX}]
+        key: uisp.if.out.discards[{#SNMPINDEX}]
+        delay: 2m
+        units: pps
+        preprocessing:
+        - type: CHANGE_PER_SECOND
+        tags:
+        - tag: component
+          value: errors
+      graph_prototypes:
+      - uuid: 1fa680a6f584425b960f80a455dc3fd2
+        name: 'Interface {#IFNAME}: Traffic (64-bit)'
+        graph_items:
+        - color: 199C0D
+          item:
+            host: Ubiquiti Wave Nano by SNMP
+            key: uisp.if.hc.in[{#SNMPINDEX}]
+        - sortorder: '1'
+          color: F63100
+          item:
+            host: Ubiquiti Wave Nano by SNMP
+            key: uisp.if.hc.out[{#SNMPINDEX}]
+      - uuid: 9b5f5218ec284253afefa98cd801dd13
+        name: 'Interface {#IFNAME}: Traffic (32-bit fallback)'
+        graph_items:
+        - color: 199C0D
+          item:
+            host: Ubiquiti Wave Nano by SNMP
+            key: uisp.if.legacy.in[{#SNMPINDEX}]
+        - sortorder: '1'
+          color: F63100
+          item:
+            host: Ubiquiti Wave Nano by SNMP
+            key: uisp.if.legacy.out[{#SNMPINDEX}]
+      - uuid: f55837d9f24340ccb8c4cdf7d110af7f
+        name: 'Interface {#IFNAME}: Errors and discards'
+        graph_items:
+        - color: 199C0D
+          item:
+            host: Ubiquiti Wave Nano by SNMP
+            key: uisp.if.in.errors[{#SNMPINDEX}]
+        - sortorder: '1'
+          color: F63100
+          item:
+            host: Ubiquiti Wave Nano by SNMP
+            key: uisp.if.out.errors[{#SNMPINDEX}]
+        - sortorder: '2'
+          color: 1A7BC5
+          item:
+            host: Ubiquiti Wave Nano by SNMP
+            key: uisp.if.in.discards[{#SNMPINDEX}]
+        - sortorder: '3'
+          color: 6C59DC
+          item:
+            host: Ubiquiti Wave Nano by SNMP
+            key: uisp.if.out.discards[{#SNMPINDEX}]
+      trigger_prototypes:
+      - uuid: f4a2f0c5aa2c45d58eb4cbee706ad51c
+        expression: '{$UISP.IF.ALERT:"{#IFNAME}"}=1 and last(/Ubiquiti Wave Nano by SNMP/uisp.if.status[{#SNMPINDEX}])=2'
+        name: 'Wave Nano: Interface {#IFNAME} is down'
+        priority: AVERAGE
+        description: Opt-in interface alert. Set contextual {$UISP.IF.ALERT:"<interface>"}=1 for the intended physical uplink
+          only.
+        tags:
+        - tag: scope
+          value: availability
+    - uuid: 0cfd5dc786d3464c971d8f1ba9d58fa5
+      name: AF60/Wave remote station discovery
+      type: SNMP_AGENT
+      snmp_oid: discovery[{#REMOTE},1.3.6.1.4.1.41112.1.11.1.3.1.14]
+      key: uisp.af60.station.discovery
+      delay: 10m
+      description: UI-AF60-MIB remote station table. On Wave models the private MIB may be partial or firmware-dependent;
+        disable this rule if unsupported.
+      item_prototypes:
+      - uuid: 97b61b6cd5c440e5b2a6a002d42c6d8d
+        name: 'AF60/Wave {#REMOTE}: Local RSSI'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.4.1.41112.1.11.1.3.1.3.{#SNMPINDEX}]
+        key: uisp.af60.rssi[{#SNMPINDEX}]
+        delay: 2m
+        tags:
+        - tag: component
+          value: wireless
+        units: dBm
+      - uuid: e340ff50b9df46d1938e3f8dc79f5770
+        name: 'AF60/Wave {#REMOTE}: Local SNR'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.4.1.41112.1.11.1.3.1.4.{#SNMPINDEX}]
+        key: uisp.af60.snr[{#SNMPINDEX}]
+        delay: 2m
+        tags:
+        - tag: component
+          value: wireless
+        units: dB
+      - uuid: 19994be6c5b9400db0e4a459d810662e
+        name: 'AF60/Wave {#REMOTE}: TX capacity'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.4.1.41112.1.11.1.3.1.7.{#SNMPINDEX}]
+        key: uisp.af60.txcap[{#SNMPINDEX}]
+        delay: 2m
+        tags:
+        - tag: component
+          value: wireless
+        units: Kbps
+      - uuid: 70d1d399fa4b4a969b233b10b9b7f854
+        name: 'AF60/Wave {#REMOTE}: RX capacity'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.4.1.41112.1.11.1.3.1.8.{#SNMPINDEX}]
+        key: uisp.af60.rxcap[{#SNMPINDEX}]
+        delay: 2m
+        tags:
+        - tag: component
+          value: wireless
+        units: Kbps
+      - uuid: c3295c897b08446eb2c36338dccef93e
+        name: 'AF60/Wave {#REMOTE}: TX throughput'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.4.1.41112.1.11.1.3.1.11.{#SNMPINDEX}]
+        key: uisp.af60.txthrough[{#SNMPINDEX}]
+        delay: 2m
+        tags:
+        - tag: component
+          value: wireless
+        units: Kbps
+      - uuid: 47b74d1914c34a2a9b43a3f546157eaa
+        name: 'AF60/Wave {#REMOTE}: RX throughput'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.4.1.41112.1.11.1.3.1.12.{#SNMPINDEX}]
+        key: uisp.af60.rxthrough[{#SNMPINDEX}]
+        delay: 2m
+        tags:
+        - tag: component
+          value: wireless
+        units: Kbps
+      - uuid: 11dc1369ae954cba8bfe11265f19998e
+        name: 'AF60/Wave {#REMOTE}: Distance'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.4.1.41112.1.11.1.3.1.15.{#SNMPINDEX}]
+        key: uisp.af60.distance[{#SNMPINDEX}]
+        delay: 2m
+        tags:
+        - tag: component
+          value: wireless
+        units: m
+      - uuid: e0e56142d18e4d7ba5e2575b26bc2c4a
+        name: 'AF60/Wave {#REMOTE}: Remote RSSI'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.4.1.41112.1.11.1.3.1.18.{#SNMPINDEX}]
+        key: uisp.af60.remote.rssi[{#SNMPINDEX}]
+        delay: 2m
+        tags:
+        - tag: component
+          value: wireless
+        units: dBm
+      graph_prototypes:
+      - uuid: 42a016a0d6764daea8635045d4bbd3ae
+        name: 'AF60/Wave {#REMOTE}: Capacity'
+        graph_items:
+        - color: 199C0D
+          item:
+            host: Ubiquiti Wave Nano by SNMP
+            key: uisp.af60.txcap[{#SNMPINDEX}]
+        - sortorder: '1'
+          color: F63100
+          item:
+            host: Ubiquiti Wave Nano by SNMP
+            key: uisp.af60.rxcap[{#SNMPINDEX}]
+      - uuid: 19b7ea1443fe435fb7c76754e5898ecb
+        name: 'AF60/Wave {#REMOTE}: Throughput'
+        graph_items:
+        - color: 199C0D
+          item:
+            host: Ubiquiti Wave Nano by SNMP
+            key: uisp.af60.txthrough[{#SNMPINDEX}]
+        - sortorder: '1'
+          color: F63100
+          item:
+            host: Ubiquiti Wave Nano by SNMP
+            key: uisp.af60.rxthrough[{#SNMPINDEX}]
+      - uuid: 8b853926eb4b45beab0265e5f46cdff8
+        name: 'AF60/Wave {#REMOTE}: Signal'
+        graph_items:
+        - color: 199C0D
+          item:
+            host: Ubiquiti Wave Nano by SNMP
+            key: uisp.af60.rssi[{#SNMPINDEX}]
+        - sortorder: '1'
+          color: F63100
+          item:
+            host: Ubiquiti Wave Nano by SNMP
+            key: uisp.af60.remote.rssi[{#SNMPINDEX}]
+    tags:
+    - tag: vendor
+      value: Ubiquiti
+    - tag: family
+      value: Wave
+    - tag: model
+      value: Wave-Nano
+    - tag: role
+      value: PtMP station
+    macros:
+    - macro: '{$ICMP.LOSS.WARN}'
+      value: '20'
+      description: Packet-loss percent threshold
+    - macro: '{$ICMP.RTT.WARN}'
+      value: '0.15'
+      description: Round-trip time threshold (seconds)
+    - macro: '{$UISP.IF.MATCHES}'
+      value: .*
+      description: Regex filter for interface descriptions
+    - macro: '{$UISP.IF.ALERT}'
+      value: '0'
+      description: Global interface-down alert is disabled. Use contextual {$UISP.IF.ALERT:"<physical-interface>"}=1 to enable
+        only for intended ports.
+    - macro: '{$UISP.RF.ALERT}'
+      value: '0'
+      description: Enable RF-link-down trigger only after confirming the private MIB/profile works on this device/firmware.
+    valuemaps:
+    - uuid: 11e6d26b20e8499a8921fecd09703071
+      name: IF-MIB ifOperStatus
+      mappings:
+      - value: '1'
+        newvalue: up
+      - value: '2'
+        newvalue: down
+      - value: '3'
+        newvalue: testing
+      - value: '4'
+        newvalue: unknown
+      - value: '5'
+        newvalue: dormant
+      - value: '6'
+        newvalue: notPresent
+      - value: '7'
+        newvalue: lowerLayerDown
+    - uuid: 0ba97ab14e0140dbacb3fe10d317bb23
+      name: IF-MIB ifAdminStatus
+      mappings:
+      - value: '1'
+        newvalue: up
+      - value: '2'
+        newvalue: down
+      - value: '3'
+        newvalue: testing
+  graphs:
+  - uuid: 4f1cd71cd3004245a488fb986bd39b97
+    name: 'Wave Nano: ICMP latency'
+    graph_items:
+    - color: 199C0D
+      item:
+        host: Ubiquiti Wave Nano by SNMP
+        key: icmppingsec
+  - uuid: 05a6fa69acea466cacc63941e2bbb8fc
+    name: 'Wave Nano: ICMP packet loss'
+    graph_items:
+    - color: 199C0D
+      item:
+        host: Ubiquiti Wave Nano by SNMP
+        key: icmppingloss
+  - uuid: 9e36e8acb91049208c46eeaa1658fb57
+    name: 'Wave Nano: SNMP agent uptime'
+    graph_items:
+    - color: 199C0D
+      item:
+        host: Ubiquiti Wave Nano by SNMP
+        key: uisp.system.uptime
