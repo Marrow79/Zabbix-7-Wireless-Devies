@@ -1,0 +1,821 @@
+zabbix_export:
+  version: '7.0'
+  template_groups:
+  - uuid: 36bff6c29af64692839d077febfc7079
+    name: Templates/Network devices
+  templates:
+  - uuid: 8dd9b7edbf6d47ee98e4e7248b5eb0a3
+    template: Ubiquiti UniFi AC Pro by SNMP
+    name: Ubiquiti UniFi AC Pro by SNMP
+    description: Zabbix 7.0.30 template for Ubiquiti UniFi AC Pro (UAP-AC-PRO) access point, Wi-Fi 5 dual-band, two
+      1GbE Ethernet ports. Based on the earlier previously verified template structure. ICMP ping/loss/latency; SNMP
+      system data, network-interface discovery and 64-bit traffic with 32-bit fallback, errors/discards; optional
+      legacy UBNT-UniFi-MIB radio and SSID/VAP discovery, client counts, utilization, per-SSID counters and graphs.
+      Firmware may not expose all enterprise MIB entries. Enable SNMP in UniFi Network and configure the Zabbix SNMP
+      host interface to UDP 161. Use SNMPv3 if available. Create/update per-interface alert context macros only for
+      uplinks you actually wish to monitor. No configuration of the device is performed by this template.
+    groups:
+    - name: Templates/Network devices
+    items:
+    - uuid: 0882accda8884602b76bb56c7de749b9
+      name: ICMP ping
+      type: SIMPLE
+      key: icmpping
+      delay: 1m
+      history: 7d
+      tags:
+      - tag: component
+        value: health
+      triggers:
+      - uuid: 9cfcb94f35e546a5af1c1c19dc66c058
+        expression: max(/Ubiquiti UniFi AC Pro by SNMP/icmpping,#3)=0
+        name: 'AC Pro: Unavailable by ICMP ping'
+        priority: HIGH
+        description: Three consecutive ICMP checks failed.
+        tags:
+        - tag: scope
+          value: availability
+    - uuid: ed797113da554dbaaf0b89c5332ecb00
+      name: ICMP packet loss
+      type: SIMPLE
+      key: icmppingloss
+      delay: 1m
+      value_type: FLOAT
+      units: '%'
+      tags:
+      - tag: component
+        value: health
+      triggers:
+      - uuid: 07f71fe328494ccc96c4f4bdd61a143d
+        expression: min(/Ubiquiti UniFi AC Pro by SNMP/icmppingloss,5m)>{$ICMP.LOSS.WARN} and min(/Ubiquiti UniFi
+          AC Pro by SNMP/icmppingloss,5m)<100
+        name: 'AC Pro: High ICMP packet loss'
+        priority: WARNING
+        description: Packet loss exceeded the warning threshold for 5 minutes.
+        tags:
+        - tag: scope
+          value: performance
+    - uuid: 515ff6c4344c47d29a46629618a02f51
+      name: ICMP response time
+      type: SIMPLE
+      key: icmppingsec
+      delay: 1m
+      value_type: FLOAT
+      units: s
+      tags:
+      - tag: component
+        value: health
+      triggers:
+      - uuid: 56d59ce582844b899f2eb4e6922f3bc8
+        expression: avg(/Ubiquiti UniFi AC Pro by SNMP/icmppingsec,5m)>{$ICMP.RTT.WARN}
+        name: 'AC Pro: High ICMP response time'
+        priority: WARNING
+        description: Average round-trip time exceeded threshold for 5 minutes.
+        tags:
+        - tag: scope
+          value: performance
+    - uuid: 41bbdb4d5d354c2a89bcc6c32d6c8c9a
+      name: SNMP network uptime
+      type: SNMP_AGENT
+      snmp_oid: get[1.3.6.1.2.1.1.3.0]
+      key: acpro.system.uptime
+      delay: 1m
+      units: uptime
+      description: sysUpTime TimeTicks / 100; SNMP-agent uptime (not necessarily chassis uptime).
+      preprocessing:
+      - type: MULTIPLIER
+        parameters:
+        - '0.01'
+      tags:
+      - tag: component
+        value: health
+      triggers:
+      - uuid: ccba34bb136f43d19bf161d74714f2d3
+        expression: nodata(/Ubiquiti UniFi AC Pro by SNMP/acpro.system.uptime,15m)=1 and last(/Ubiquiti UniFi AC Pro
+          by SNMP/icmpping)=1
+        name: 'AC Pro: SNMP stops responding while ping succeeds'
+        priority: AVERAGE
+        description: Device replies to ping but sysUpTime polling has had no data for 15 minutes; check SNMP credentials/firewall.
+        tags:
+        - tag: scope
+          value: availability
+    - uuid: a6eea21a3bb64dab926c636df4a8c66b
+      name: SNMP system description
+      type: SNMP_AGENT
+      snmp_oid: get[1.3.6.1.2.1.1.1.0]
+      key: acpro.system.description
+      delay: 1h
+      value_type: CHAR
+      preprocessing:
+      - type: DISCARD_UNCHANGED_HEARTBEAT
+        parameters:
+        - 12h
+      tags:
+      - tag: component
+        value: inventory
+    - uuid: 1110fb400b18441fa153614e014b9d49
+      name: SNMP system object ID
+      type: SNMP_AGENT
+      snmp_oid: get[1.3.6.1.2.1.1.2.0]
+      key: acpro.system.objectid
+      delay: 1h
+      value_type: CHAR
+      preprocessing:
+      - type: DISCARD_UNCHANGED_HEARTBEAT
+        parameters:
+        - 12h
+      tags:
+      - tag: component
+        value: inventory
+    - uuid: 4c39fd1e0d08478485c6572fcbac013d
+      name: SNMP system name
+      type: SNMP_AGENT
+      snmp_oid: get[1.3.6.1.2.1.1.5.0]
+      key: acpro.system.name
+      delay: 1h
+      value_type: CHAR
+      preprocessing:
+      - type: DISCARD_UNCHANGED_HEARTBEAT
+        parameters:
+        - 12h
+      tags:
+      - tag: component
+        value: inventory
+    - uuid: aa7d1f08f08a42adb323662b252b3762
+      name: SNMP system location
+      type: SNMP_AGENT
+      snmp_oid: get[1.3.6.1.2.1.1.6.0]
+      key: acpro.system.location
+      delay: 1h
+      value_type: CHAR
+      preprocessing:
+      - type: DISCARD_UNCHANGED_HEARTBEAT
+        parameters:
+        - 12h
+      tags:
+      - tag: component
+        value: inventory
+    - uuid: 52130dada047424f9bc0400651df08e3
+      name: SNMP system contact
+      type: SNMP_AGENT
+      snmp_oid: get[1.3.6.1.2.1.1.4.0]
+      key: acpro.system.contact
+      delay: 1h
+      value_type: CHAR
+      preprocessing:
+      - type: DISCARD_UNCHANGED_HEARTBEAT
+        parameters:
+        - 12h
+      tags:
+      - tag: component
+        value: inventory
+    - uuid: dc8ffe3f255a410691abc44a59dfe12a
+      name: UniFi reported AP model
+      type: SNMP_AGENT
+      snmp_oid: get[1.3.6.1.4.1.41112.1.6.3.3.0]
+      key: acpro.unifi.model
+      delay: 10m
+      value_type: CHAR
+      preprocessing:
+      - type: DISCARD_UNCHANGED_HEARTBEAT
+        parameters:
+        - 4h
+      tags:
+      - tag: component
+        value: unifi
+    - uuid: db2dbc795fde4f748e32dbcc8cab0310
+      name: UniFi reported firmware version
+      type: SNMP_AGENT
+      snmp_oid: get[1.3.6.1.4.1.41112.1.6.3.6.0]
+      key: acpro.unifi.firmware
+      delay: 10m
+      value_type: CHAR
+      preprocessing:
+      - type: DISCARD_UNCHANGED_HEARTBEAT
+        parameters:
+        - 4h
+      tags:
+      - tag: component
+        value: unifi
+    - uuid: 748c8d927cae4c9eb1c5f38c8fbac04e
+      name: UniFi reported uplink
+      type: SNMP_AGENT
+      snmp_oid: get[1.3.6.1.4.1.41112.1.6.3.4.0]
+      key: acpro.unifi.uplink
+      delay: 10m
+      value_type: CHAR
+      preprocessing:
+      - type: DISCARD_UNCHANGED_HEARTBEAT
+        parameters:
+        - 4h
+      tags:
+      - tag: component
+        value: unifi
+    - uuid: 1e42784c6abc41c4bafce91a2862798f
+      name: UniFi reported isolated state
+      type: SNMP_AGENT
+      snmp_oid: get[1.3.6.1.4.1.41112.1.6.3.2.0]
+      key: acpro.unifi.isolated
+      delay: 10m
+      preprocessing:
+      - type: DISCARD_UNCHANGED_HEARTBEAT
+        parameters:
+        - 4h
+      tags:
+      - tag: component
+        value: unifi
+      valuemap:
+        name: TruthValue (1=true, 2=false)
+      triggers:
+      - uuid: 7fa4400bef1d4390974d20860bcf6f2a
+        expression: last(/Ubiquiti UniFi AC Pro by SNMP/acpro.unifi.isolated)=1
+        name: 'AC Pro: UniFi reports isolated AP'
+        priority: AVERAGE
+        tags:
+        - tag: scope
+          value: performance
+    discovery_rules:
+    - uuid: 612ae79f81764f52b4ab322960cd8eba
+      name: Network interface discovery (IF-MIB)
+      type: SNMP_AGENT
+      snmp_oid: discovery[{#IFNAME},1.3.6.1.2.1.2.2.1.2,{#IFADMIN},1.3.6.1.2.1.2.2.1.7]
+      key: acpro.if.discovery
+      delay: 1h
+      description: Discover interface descriptions by IF-MIB. UAP-AC-PRO has two 1GbE Ethernet ports; some firmware
+        also lists virtual/radio interfaces. 64-bit counters are preferred if implemented; 32-bit fallbacks are available.
+        Do not enable uplink down alerts for intentional unused ports.
+      filter:
+        conditions:
+        - macro: '{#IFNAME}'
+          value: '{$ACPRO.IF.MATCHES}'
+      item_prototypes:
+      - uuid: 04081674170c4877ab44711466a7b64b
+        name: 'Interface {#IFNAME}: Operational status'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.2.1.2.2.1.8.{#SNMPINDEX}]
+        key: acpro.if.status[{#SNMPINDEX}]
+        delay: 2m
+        valuemap:
+          name: IF-MIB ifOperStatus
+        tags:
+        - tag: component
+          value: network
+      - uuid: c79d6e52510141ee8ea5868257373676
+        name: 'Interface {#IFNAME}: Admin status'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.2.1.2.2.1.7.{#SNMPINDEX}]
+        key: acpro.if.admin[{#SNMPINDEX}]
+        delay: 5m
+        valuemap:
+          name: IF-MIB ifAdminStatus
+        tags:
+        - tag: component
+          value: network
+      - uuid: 7c885fc926384e8da243d8cf3d689ed2
+        name: 'Interface {#IFNAME}: Incoming traffic (64-bit)'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.2.1.31.1.1.1.6.{#SNMPINDEX}]
+        key: acpro.if.hc.in[{#SNMPINDEX}]
+        delay: 1m
+        units: bps
+        description: 'IF-MIB ifXTable high-capacity octet counter. Optional: not all AP firmware exposes these counters;
+          use the 32-bit fallback graph if the 64-bit items are unsupported.'
+        preprocessing:
+        - type: CHANGE_PER_SECOND
+        - type: MULTIPLIER
+          parameters:
+          - '8'
+        tags:
+        - tag: component
+          value: traffic
+      - uuid: 2183308116d040de8045ee8df39093d0
+        name: 'Interface {#IFNAME}: Outgoing traffic (64-bit)'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.2.1.31.1.1.1.10.{#SNMPINDEX}]
+        key: acpro.if.hc.out[{#SNMPINDEX}]
+        delay: 1m
+        units: bps
+        description: 'IF-MIB ifXTable high-capacity octet counter. Optional: not all AP firmware exposes these counters;
+          use the 32-bit fallback graph if the 64-bit items are unsupported.'
+        preprocessing:
+        - type: CHANGE_PER_SECOND
+        - type: MULTIPLIER
+          parameters:
+          - '8'
+        tags:
+        - tag: component
+          value: traffic
+      - uuid: c6d1f47d6dd14ddb86da229ee19e540f
+        name: 'Interface {#IFNAME}: Incoming traffic (32-bit fallback)'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.2.1.2.2.1.10.{#SNMPINDEX}]
+        key: acpro.if.legacy.in[{#SNMPINDEX}]
+        delay: 1m
+        units: bps
+        description: Counter converted from bytes/s to bits/s. 32-bit counters may wrap at high throughput.
+        preprocessing:
+        - type: CHANGE_PER_SECOND
+        - type: MULTIPLIER
+          parameters:
+          - '8'
+        tags:
+        - tag: component
+          value: traffic
+      - uuid: 6d6aefba30874e72949e4985e749af48
+        name: 'Interface {#IFNAME}: Outgoing traffic (32-bit fallback)'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.2.1.2.2.1.16.{#SNMPINDEX}]
+        key: acpro.if.legacy.out[{#SNMPINDEX}]
+        delay: 1m
+        units: bps
+        description: Counter converted from bytes/s to bits/s. 32-bit counters may wrap at high throughput.
+        preprocessing:
+        - type: CHANGE_PER_SECOND
+        - type: MULTIPLIER
+          parameters:
+          - '8'
+        tags:
+        - tag: component
+          value: traffic
+      - uuid: cd364cea85104526ac685c9ac46a6b2c
+        name: 'Interface {#IFNAME}: Input errors'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.2.1.2.2.1.14.{#SNMPINDEX}]
+        key: acpro.if.in.errors[{#SNMPINDEX}]
+        delay: 2m
+        units: pps
+        preprocessing:
+        - type: CHANGE_PER_SECOND
+        tags:
+        - tag: component
+          value: errors
+      - uuid: cf72a69d762644d58b916f63dd831d92
+        name: 'Interface {#IFNAME}: Output errors'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.2.1.2.2.1.20.{#SNMPINDEX}]
+        key: acpro.if.out.errors[{#SNMPINDEX}]
+        delay: 2m
+        units: pps
+        preprocessing:
+        - type: CHANGE_PER_SECOND
+        tags:
+        - tag: component
+          value: errors
+      - uuid: 28ef0ab88b914d529ab0e0c9f0cef682
+        name: 'Interface {#IFNAME}: Input discards'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.2.1.2.2.1.13.{#SNMPINDEX}]
+        key: acpro.if.in.discards[{#SNMPINDEX}]
+        delay: 2m
+        units: pps
+        preprocessing:
+        - type: CHANGE_PER_SECOND
+        tags:
+        - tag: component
+          value: errors
+      - uuid: 270746cfa05c49a9b146f3ce4470e640
+        name: 'Interface {#IFNAME}: Output discards'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.2.1.2.2.1.19.{#SNMPINDEX}]
+        key: acpro.if.out.discards[{#SNMPINDEX}]
+        delay: 2m
+        units: pps
+        preprocessing:
+        - type: CHANGE_PER_SECOND
+        tags:
+        - tag: component
+          value: errors
+      graph_prototypes:
+      - uuid: f305dba194c5457292a8f3c955dab976
+        name: 'Interface {#IFNAME}: Traffic (64-bit)'
+        graph_items:
+        - color: 199C0D
+          item:
+            host: Ubiquiti UniFi AC Pro by SNMP
+            key: acpro.if.hc.in[{#SNMPINDEX}]
+        - sortorder: '1'
+          color: F63100
+          item:
+            host: Ubiquiti UniFi AC Pro by SNMP
+            key: acpro.if.hc.out[{#SNMPINDEX}]
+      - uuid: fc4b8e81cf7146f0958ab28dcafd3cb5
+        name: 'Interface {#IFNAME}: Traffic (32-bit fallback)'
+        graph_items:
+        - color: 199C0D
+          item:
+            host: Ubiquiti UniFi AC Pro by SNMP
+            key: acpro.if.legacy.in[{#SNMPINDEX}]
+        - sortorder: '1'
+          color: F63100
+          item:
+            host: Ubiquiti UniFi AC Pro by SNMP
+            key: acpro.if.legacy.out[{#SNMPINDEX}]
+      - uuid: 2a5fb2cdf8d64de0ad72268ed2f57169
+        name: 'Interface {#IFNAME}: Errors and discards'
+        graph_items:
+        - color: 199C0D
+          item:
+            host: Ubiquiti UniFi AC Pro by SNMP
+            key: acpro.if.in.errors[{#SNMPINDEX}]
+        - sortorder: '1'
+          color: F63100
+          item:
+            host: Ubiquiti UniFi AC Pro by SNMP
+            key: acpro.if.out.errors[{#SNMPINDEX}]
+        - sortorder: '2'
+          color: 1A7BC5
+          item:
+            host: Ubiquiti UniFi AC Pro by SNMP
+            key: acpro.if.in.discards[{#SNMPINDEX}]
+        - sortorder: '3'
+          color: 6C59DC
+          item:
+            host: Ubiquiti UniFi AC Pro by SNMP
+            key: acpro.if.out.discards[{#SNMPINDEX}]
+      trigger_prototypes:
+      - uuid: 864fd429807b44af8b5e56ea513e6619
+        expression: '{$ACPRO.IF.ALERT:"{#IFNAME}"}=1 and last(/Ubiquiti UniFi AC Pro by SNMP/acpro.if.status[{#SNMPINDEX}])=2'
+        name: 'AC Pro: Interface {#IFNAME} is down'
+        priority: AVERAGE
+        description: Set {$ACPRO.IF.ALERT:"<ifDescr>"}=1 at host level for each port that should generate a down alert;
+          default is 0.
+        tags:
+        - tag: scope
+          value: availability
+    - uuid: cf74553999d84c3e915fee11c701a057
+      name: UniFi radio discovery (optional firmware MIB)
+      type: SNMP_AGENT
+      snmp_oid: discovery[{#RADIONAME},1.3.6.1.4.1.41112.1.6.1.1.1.2]
+      key: acpro.radio.discovery
+      delay: 1h
+      description: Optional UBNT-UniFi-MIB radio discovery for 2.4 GHz and 5 GHz. Depends on actual UAP-AC-PRO firmware
+        SNMP implementation.
+      item_prototypes:
+      - uuid: fd24df188da7465b840c5bd0c559a8c0
+        name: 'Radio {#RADIONAME}: Radio mode / band'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.4.1.41112.1.6.1.1.1.3.{#SNMPINDEX}]
+        key: acpro.radio.mode[{#SNMPINDEX}]
+        delay: 15m
+        value_type: CHAR
+        preprocessing:
+        - type: DISCARD_UNCHANGED_HEARTBEAT
+          parameters:
+          - 4h
+        tags:
+        - tag: component
+          value: radio
+      - uuid: 13ea530afa214095bbe9802d98b6576a
+        name: 'Radio {#RADIONAME}: Total channel utilization'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.4.1.41112.1.6.1.1.1.6.{#SNMPINDEX}]
+        key: acpro.radio.util.total[{#SNMPINDEX}]
+        delay: 2m
+        units: '%'
+        tags:
+        - tag: component
+          value: radio
+      - uuid: 862f2d69aad7459c92e77668a5071a64
+        name: 'Radio {#RADIONAME}: Self receive channel utilization'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.4.1.41112.1.6.1.1.1.7.{#SNMPINDEX}]
+        key: acpro.radio.util.rx[{#SNMPINDEX}]
+        delay: 2m
+        units: '%'
+        tags:
+        - tag: component
+          value: radio
+      - uuid: 98fcf02c06724449a9733a0a157c8a74
+        name: 'Radio {#RADIONAME}: Self transmit channel utilization'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.4.1.41112.1.6.1.1.1.8.{#SNMPINDEX}]
+        key: acpro.radio.util.tx[{#SNMPINDEX}]
+        delay: 2m
+        units: '%'
+        tags:
+        - tag: component
+          value: radio
+      - uuid: d0a5050fba6e42aa9fbfceb237242658
+        name: 'Radio {#RADIONAME}: Receive packets'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.4.1.41112.1.6.1.1.1.4.{#SNMPINDEX}]
+        key: acpro.radio.rx.pps[{#SNMPINDEX}]
+        delay: 2m
+        units: pps
+        preprocessing:
+        - type: CHANGE_PER_SECOND
+        tags:
+        - tag: component
+          value: radio
+      - uuid: 763c91d57eeb45c0bbb5f6164dec0c5e
+        name: 'Radio {#RADIONAME}: Transmit packets'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.4.1.41112.1.6.1.1.1.5.{#SNMPINDEX}]
+        key: acpro.radio.tx.pps[{#SNMPINDEX}]
+        delay: 2m
+        units: pps
+        preprocessing:
+        - type: CHANGE_PER_SECOND
+        tags:
+        - tag: component
+          value: radio
+      graph_prototypes:
+      - uuid: 1539b98d374147ebb7441751caa7c9de
+        name: 'Radio {#RADIONAME}: Channel utilization'
+        graph_items:
+        - color: 199C0D
+          item:
+            host: Ubiquiti UniFi AC Pro by SNMP
+            key: acpro.radio.util.total[{#SNMPINDEX}]
+        - sortorder: '1'
+          color: F63100
+          item:
+            host: Ubiquiti UniFi AC Pro by SNMP
+            key: acpro.radio.util.rx[{#SNMPINDEX}]
+        - sortorder: '2'
+          color: 1A7BC5
+          item:
+            host: Ubiquiti UniFi AC Pro by SNMP
+            key: acpro.radio.util.tx[{#SNMPINDEX}]
+      - uuid: b51c281b4900458888c370c1c85c22b1
+        name: 'Radio {#RADIONAME}: Packets'
+        graph_items:
+        - color: 199C0D
+          item:
+            host: Ubiquiti UniFi AC Pro by SNMP
+            key: acpro.radio.rx.pps[{#SNMPINDEX}]
+        - sortorder: '1'
+          color: F63100
+          item:
+            host: Ubiquiti UniFi AC Pro by SNMP
+            key: acpro.radio.tx.pps[{#SNMPINDEX}]
+      trigger_prototypes:
+      - uuid: 887a56181e8749a4837fe3ce8c190bbd
+        expression: avg(/Ubiquiti UniFi AC Pro by SNMP/acpro.radio.util.total[{#SNMPINDEX}],10m)>{$ACPRO.RADIO.UTIL.WARN}
+        name: 'AC Pro: Radio {#RADIONAME} channel utilization is high'
+        priority: WARNING
+        description: Radio channel busy percentage exceeded configured threshold for ten minutes.
+        tags:
+        - tag: scope
+          value: performance
+    - uuid: 5dac1df16be84b2c81d3db4d46810d59
+      name: UniFi SSID / virtual AP discovery (optional firmware MIB)
+      type: SNMP_AGENT
+      snmp_oid: discovery[{#VAPNAME},1.3.6.1.4.1.41112.1.6.1.2.1.7,{#SSID},1.3.6.1.4.1.41112.1.6.1.2.1.6]
+      key: acpro.vap.discovery
+      delay: 1h
+      description: Optional UBNT-UniFi-MIB SSID/BSSID (virtual AP) discovery. Each band+SSID BSSID is counted separately;
+        numbers from different BSSIDs should not be mistaken for a distinct-device count.
+      item_prototypes:
+      - uuid: 156a154897104c0c98457a464c4fbb33
+        name: 'SSID {#SSID} ({#VAPNAME}): Client stations'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.4.1.41112.1.6.1.2.1.8.{#SNMPINDEX}]
+        key: acpro.vap.clients[{#SNMPINDEX}]
+        delay: 2m
+        tags:
+        - tag: component
+          value: wireless
+      - uuid: ddeffc0103214bcaa339c86e202a3dbe
+        name: 'SSID {#SSID} ({#VAPNAME}): Channel'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.4.1.41112.1.6.1.2.1.4.{#SNMPINDEX}]
+        key: acpro.vap.channel[{#SNMPINDEX}]
+        delay: 5m
+        tags:
+        - tag: component
+          value: wireless
+      - uuid: e301911c95d84ca5b5e84c0fa5437fbb
+        name: 'SSID {#SSID} ({#VAPNAME}): CCQ'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.4.1.41112.1.6.1.2.1.3.{#SNMPINDEX}]
+        key: acpro.vap.ccq[{#SNMPINDEX}]
+        delay: 5m
+        units: '%'
+        tags:
+        - tag: component
+          value: wireless
+      - uuid: b20e97c5c8d2423f9760ae386e58503c
+        name: 'SSID {#SSID} ({#VAPNAME}): Transmit power'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.4.1.41112.1.6.1.2.1.21.{#SNMPINDEX}]
+        key: acpro.vap.tx.power[{#SNMPINDEX}]
+        delay: 5m
+        units: dBm
+        tags:
+        - tag: component
+          value: wireless
+      - uuid: c2647113e6da4f49854a1f46355308f5
+        name: 'SSID {#SSID} ({#VAPNAME}): Virtual AP up state'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.4.1.41112.1.6.1.2.1.22.{#SNMPINDEX}]
+        key: acpro.vap.up[{#SNMPINDEX}]
+        delay: 5m
+        tags:
+        - tag: component
+          value: wireless
+        valuemap:
+          name: TruthValue (1=true, 2=false)
+      - uuid: d9d9c3311f2143e4a800fc4556a34d59
+        name: 'SSID {#SSID} ({#VAPNAME}): Radio mapping'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.4.1.41112.1.6.1.2.1.9.{#SNMPINDEX}]
+        key: acpro.vap.radio[{#SNMPINDEX}]
+        delay: 15m
+        value_type: CHAR
+        preprocessing:
+        - type: DISCARD_UNCHANGED_HEARTBEAT
+          parameters:
+          - 4h
+        tags:
+        - tag: component
+          value: wireless
+      - uuid: fe5bc61b92d94423a48872a9b2927c7a
+        name: 'SSID {#SSID} ({#VAPNAME}): Received traffic'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.4.1.41112.1.6.1.2.1.10.{#SNMPINDEX}]
+        key: acpro.vap.rx.bps[{#SNMPINDEX}]
+        delay: 1m
+        units: bps
+        description: UBNT-UniFi-MIB Counter32; at high speeds can wrap between polls.
+        preprocessing:
+        - type: CHANGE_PER_SECOND
+        - type: MULTIPLIER
+          parameters:
+          - '8'
+        tags:
+        - tag: component
+          value: wireless
+      - uuid: 98012b2216d44c2ba79a89765088f5f2
+        name: 'SSID {#SSID} ({#VAPNAME}): Transmitted traffic'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.4.1.41112.1.6.1.2.1.16.{#SNMPINDEX}]
+        key: acpro.vap.tx.bps[{#SNMPINDEX}]
+        delay: 1m
+        units: bps
+        description: UBNT-UniFi-MIB Counter32; at high speeds can wrap between polls.
+        preprocessing:
+        - type: CHANGE_PER_SECOND
+        - type: MULTIPLIER
+          parameters:
+          - '8'
+        tags:
+        - tag: component
+          value: wireless
+      - uuid: 3c6fa6df23cf45d6a8b540ba58a37e89
+        name: 'SSID {#SSID} ({#VAPNAME}): Received dropped frames'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.4.1.41112.1.6.1.2.1.12.{#SNMPINDEX}]
+        key: acpro.vap.rx.dropped[{#SNMPINDEX}]
+        delay: 2m
+        units: pps
+        preprocessing:
+        - type: CHANGE_PER_SECOND
+        tags:
+        - tag: component
+          value: wireless
+      - uuid: 9c8b0e623aef443bbc8fb5a83855283f
+        name: 'SSID {#SSID} ({#VAPNAME}): Transmitted dropped frames'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.4.1.41112.1.6.1.2.1.17.{#SNMPINDEX}]
+        key: acpro.vap.tx.dropped[{#SNMPINDEX}]
+        delay: 2m
+        units: pps
+        preprocessing:
+        - type: CHANGE_PER_SECOND
+        tags:
+        - tag: component
+          value: wireless
+      - uuid: 7dd32124421a413fb10d6e462fdb8be1
+        name: 'SSID {#SSID} ({#VAPNAME}): Transmitted retries'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.4.1.41112.1.6.1.2.1.20.{#SNMPINDEX}]
+        key: acpro.vap.tx.retries[{#SNMPINDEX}]
+        delay: 2m
+        units: pps
+        preprocessing:
+        - type: CHANGE_PER_SECOND
+        tags:
+        - tag: component
+          value: wireless
+      graph_prototypes:
+      - uuid: fabf58e0d6994cef992f68fb3886bf33
+        name: 'SSID {#SSID} ({#VAPNAME}): Connected clients'
+        graph_items:
+        - color: 199C0D
+          item:
+            host: Ubiquiti UniFi AC Pro by SNMP
+            key: acpro.vap.clients[{#SNMPINDEX}]
+      - uuid: 5bab95cfddb7448fb2ab386fb04b4bb6
+        name: 'SSID {#SSID} ({#VAPNAME}): Traffic (32-bit counters)'
+        graph_items:
+        - color: 199C0D
+          item:
+            host: Ubiquiti UniFi AC Pro by SNMP
+            key: acpro.vap.rx.bps[{#SNMPINDEX}]
+        - sortorder: '1'
+          color: F63100
+          item:
+            host: Ubiquiti UniFi AC Pro by SNMP
+            key: acpro.vap.tx.bps[{#SNMPINDEX}]
+      - uuid: 4ef270b5e6374e3294515a56cd46e500
+        name: 'SSID {#SSID} ({#VAPNAME}): Dropped and retried frames'
+        graph_items:
+        - color: 199C0D
+          item:
+            host: Ubiquiti UniFi AC Pro by SNMP
+            key: acpro.vap.rx.dropped[{#SNMPINDEX}]
+        - sortorder: '1'
+          color: F63100
+          item:
+            host: Ubiquiti UniFi AC Pro by SNMP
+            key: acpro.vap.tx.dropped[{#SNMPINDEX}]
+        - sortorder: '2'
+          color: 1A7BC5
+          item:
+            host: Ubiquiti UniFi AC Pro by SNMP
+            key: acpro.vap.tx.retries[{#SNMPINDEX}]
+    tags:
+    - tag: class
+      value: network
+    - tag: target
+      value: unifi
+    - tag: model
+      value: UAP-AC-PRO
+    macros:
+    - macro: '{$ICMP.LOSS.WARN}'
+      value: '20'
+      description: Packet-loss percent threshold
+    - macro: '{$ICMP.RTT.WARN}'
+      value: '0.15'
+      description: Round-trip time threshold (seconds)
+    - macro: '{$ACPRO.IF.MATCHES}'
+      value: .*
+      description: Regex filter for interface descriptions
+    - macro: '{$ACPRO.IF.ALERT}'
+      value: '0'
+      description: Default 0 disables down alerts for other ports; create contextual overrides for any additional
+        live Ethernet interfaces.
+    - macro: '{$ACPRO.IF.ALERT:"eth0"}'
+      value: '1'
+      description: Enable link-down warning for common main Ethernet interface name eth0; confirm your AP ifDescr
+        first.
+    - macro: '{$ACPRO.RADIO.UTIL.WARN}'
+      value: '85'
+      description: 10-minute average radio utilization threshold (%)
+    valuemaps:
+    - uuid: 39182b2940c64ddaa06c4f978c998137
+      name: TruthValue (1=true, 2=false)
+      mappings:
+      - value: '1'
+        newvalue: 'True'
+      - value: '2'
+        newvalue: 'False'
+    - uuid: 5835f514fd1f4281bd3cf4e7bced1a5f
+      name: IF-MIB ifOperStatus
+      mappings:
+      - value: '1'
+        newvalue: up
+      - value: '2'
+        newvalue: down
+      - value: '3'
+        newvalue: testing
+      - value: '4'
+        newvalue: unknown
+      - value: '5'
+        newvalue: dormant
+      - value: '6'
+        newvalue: notPresent
+      - value: '7'
+        newvalue: lowerLayerDown
+    - uuid: ef936e46c1c04aa6896196657d1ea8cd
+      name: IF-MIB ifAdminStatus
+      mappings:
+      - value: '1'
+        newvalue: up
+      - value: '2'
+        newvalue: down
+      - value: '3'
+        newvalue: testing
+  graphs:
+  - uuid: 96f48dffad3e460c87a00e77d3ff5f48
+    name: 'AC Pro: ICMP latency'
+    graph_items:
+    - color: 199C0D
+      item:
+        host: Ubiquiti UniFi AC Pro by SNMP
+        key: icmppingsec
+  - uuid: 41a5e151dfd446a1a65f2513933b57b4
+    name: 'AC Pro: ICMP packet loss'
+    graph_items:
+    - color: 199C0D
+      item:
+        host: Ubiquiti UniFi AC Pro by SNMP
+        key: icmppingloss
+  - uuid: 39d8f58a65da4e45911835fbd8b5b0ac
+    name: 'AC Pro: SNMP agent uptime'
+    graph_items:
+    - color: 199C0D
+      item:
+        host: Ubiquiti UniFi AC Pro by SNMP
+        key: acpro.system.uptime
