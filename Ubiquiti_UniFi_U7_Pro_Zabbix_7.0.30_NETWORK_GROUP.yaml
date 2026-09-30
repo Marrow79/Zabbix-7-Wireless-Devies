@@ -1,0 +1,810 @@
+zabbix_export:
+  version: '7.0'
+  template_groups:
+  - uuid: 36bff6c29af64692839d077febfc7079
+    name: Templates/Network devices
+  templates:
+  - uuid: 1b2af13e89cf4ee190d0c83f15a75ee6
+    template: Ubiquiti UniFi U7 Pro by SNMP
+    name: Ubiquiti UniFi U7 Pro by SNMP
+    description: Standalone Zabbix 7.0.30 Ubiquiti UniFi U7 Pro SNMP template. Uses universal SNMPv2/IF MIBs for health and network
+      interfaces and optional older UBNT-UniFi-MIB tables for radio/SSID metrics. Legacy radio and SSID OIDs are firmware-dependent
+      and not verified on a live U7 Pro. Create an SNMP host interface (port 161) separately and enable SNMP in UniFi Network. For the
+      2.5GbE uplink prefer 64-bit interface counters; 32-bit is fallback only.
+    groups:
+    - name: Templates/Network devices
+    items:
+    - uuid: 8ad7d9277aca491198ff6f9be75d16d7
+      name: ICMP ping
+      type: SIMPLE
+      key: icmpping
+      delay: 1m
+      history: 7d
+      tags:
+      - tag: component
+        value: health
+      triggers:
+      - uuid: f127f98fc8594453a6972d7ee4c5fb7e
+        expression: max(/Ubiquiti UniFi U7 Pro by SNMP/icmpping,#3)=0
+        name: 'U7 Pro: Unavailable by ICMP ping'
+        priority: HIGH
+        description: Three consecutive ICMP checks failed.
+        tags:
+        - tag: scope
+          value: availability
+    - uuid: 8db10a028a8044d6a4280d5459573261
+      name: ICMP packet loss
+      type: SIMPLE
+      key: icmppingloss
+      delay: 1m
+      value_type: FLOAT
+      units: '%'
+      tags:
+      - tag: component
+        value: health
+      triggers:
+      - uuid: 4d82e0a65fce4f8ca9ea41cea6842f1d
+        expression: min(/Ubiquiti UniFi U7 Pro by SNMP/icmppingloss,5m)>{$ICMP.LOSS.WARN} and min(/Ubiquiti UniFi U7 Pro by SNMP/icmppingloss,5m)<100
+        name: 'U7 Pro: High ICMP packet loss'
+        priority: WARNING
+        description: Packet loss exceeded the warning threshold for 5 minutes.
+        tags:
+        - tag: scope
+          value: performance
+    - uuid: 8299511158754c9b8577658cbc80297f
+      name: ICMP response time
+      type: SIMPLE
+      key: icmppingsec
+      delay: 1m
+      value_type: FLOAT
+      units: s
+      tags:
+      - tag: component
+        value: health
+      triggers:
+      - uuid: 3f3b4cb5b1a84b6a9f32d70a1472df2e
+        expression: avg(/Ubiquiti UniFi U7 Pro by SNMP/icmppingsec,5m)>{$ICMP.RTT.WARN}
+        name: 'U7 Pro: High ICMP response time'
+        priority: WARNING
+        description: Average round-trip time exceeded threshold for 5 minutes.
+        tags:
+        - tag: scope
+          value: performance
+    - uuid: 9b765699c807404abb3a8892da371ca9
+      name: SNMP network uptime
+      type: SNMP_AGENT
+      snmp_oid: get[1.3.6.1.2.1.1.3.0]
+      key: u7.system.uptime
+      delay: 1m
+      units: uptime
+      description: sysUpTime (TimeTicks / 100); measures SNMP agent uptime, not guaranteed hardware uptime.
+      preprocessing:
+      - type: MULTIPLIER
+        parameters:
+        - '0.01'
+      tags:
+      - tag: component
+        value: health
+      triggers:
+      - uuid: f252c81dd76445e5bee6c0ea254ef28f
+        expression: nodata(/Ubiquiti UniFi U7 Pro by SNMP/u7.system.uptime,15m)=1 and last(/Ubiquiti UniFi U7 Pro by SNMP/icmpping)=1
+        name: 'U7 Pro: SNMP stops responding while ping succeeds'
+        priority: AVERAGE
+        description: Device replies to ping but sysUpTime polling has had no data for 15 minutes; check SNMP credentials/firewall.
+        tags:
+        - tag: scope
+          value: availability
+    - uuid: 86b0479f39e94fe59ed48b8166510cf3
+      name: SNMP system description
+      type: SNMP_AGENT
+      snmp_oid: get[1.3.6.1.2.1.1.1.0]
+      key: u7.system.description
+      delay: 1h
+      value_type: CHAR
+      preprocessing:
+      - type: DISCARD_UNCHANGED_HEARTBEAT
+        parameters:
+        - 12h
+      tags:
+      - tag: component
+        value: inventory
+    - uuid: a3994dda7c2c4537960fa210d32d64a1
+      name: SNMP system object ID
+      type: SNMP_AGENT
+      snmp_oid: get[1.3.6.1.2.1.1.2.0]
+      key: u7.system.objectid
+      delay: 1h
+      value_type: CHAR
+      preprocessing:
+      - type: DISCARD_UNCHANGED_HEARTBEAT
+        parameters:
+        - 12h
+      tags:
+      - tag: component
+        value: inventory
+    - uuid: f8468f0af0304d1895d7a52fea7693b1
+      name: SNMP system name
+      type: SNMP_AGENT
+      snmp_oid: get[1.3.6.1.2.1.1.5.0]
+      key: u7.system.name
+      delay: 1h
+      value_type: CHAR
+      preprocessing:
+      - type: DISCARD_UNCHANGED_HEARTBEAT
+        parameters:
+        - 12h
+      tags:
+      - tag: component
+        value: inventory
+    - uuid: c6b94e28d575496ab80589fa42c257b9
+      name: SNMP system location
+      type: SNMP_AGENT
+      snmp_oid: get[1.3.6.1.2.1.1.6.0]
+      key: u7.system.location
+      delay: 1h
+      value_type: CHAR
+      preprocessing:
+      - type: DISCARD_UNCHANGED_HEARTBEAT
+        parameters:
+        - 12h
+      tags:
+      - tag: component
+        value: inventory
+    - uuid: 9acfb48003f047638245579a844f02e7
+      name: SNMP system contact
+      type: SNMP_AGENT
+      snmp_oid: get[1.3.6.1.2.1.1.4.0]
+      key: u7.system.contact
+      delay: 1h
+      value_type: CHAR
+      preprocessing:
+      - type: DISCARD_UNCHANGED_HEARTBEAT
+        parameters:
+        - 12h
+      tags:
+      - tag: component
+        value: inventory
+    - uuid: 6fd34fd02f4149feab5396e10ae99325
+      name: UniFi reported AP model
+      type: SNMP_AGENT
+      snmp_oid: get[1.3.6.1.4.1.41112.1.6.3.3.0]
+      key: u7.unifi.model
+      delay: 10m
+      value_type: CHAR
+      preprocessing:
+      - type: DISCARD_UNCHANGED_HEARTBEAT
+        parameters:
+        - 4h
+      tags:
+      - tag: component
+        value: unifi
+    - uuid: f998485888334972ba57ca562405de26
+      name: UniFi reported firmware version
+      type: SNMP_AGENT
+      snmp_oid: get[1.3.6.1.4.1.41112.1.6.3.6.0]
+      key: u7.unifi.firmware
+      delay: 10m
+      value_type: CHAR
+      preprocessing:
+      - type: DISCARD_UNCHANGED_HEARTBEAT
+        parameters:
+        - 4h
+      tags:
+      - tag: component
+        value: unifi
+    - uuid: 7f1ee94c9e834a0ebdedd4edf62b06a8
+      name: UniFi reported uplink
+      type: SNMP_AGENT
+      snmp_oid: get[1.3.6.1.4.1.41112.1.6.3.4.0]
+      key: u7.unifi.uplink
+      delay: 10m
+      value_type: CHAR
+      preprocessing:
+      - type: DISCARD_UNCHANGED_HEARTBEAT
+        parameters:
+        - 4h
+      tags:
+      - tag: component
+        value: unifi
+    - uuid: 70ef810d1816412eb52fa52d520e6298
+      name: UniFi reported isolated state
+      type: SNMP_AGENT
+      snmp_oid: get[1.3.6.1.4.1.41112.1.6.3.2.0]
+      key: u7.unifi.isolated
+      delay: 10m
+      preprocessing:
+      - type: DISCARD_UNCHANGED_HEARTBEAT
+        parameters:
+        - 4h
+      tags:
+      - tag: component
+        value: unifi
+      valuemap:
+        name: TruthValue (1=true, 2=false)
+      triggers:
+      - uuid: 331b8fba33bd442bb559ccb8b3c2e54a
+        expression: last(/Ubiquiti UniFi U7 Pro by SNMP/u7.unifi.isolated)=1
+        name: 'U7 Pro: UniFi reports isolated AP'
+        priority: AVERAGE
+        tags:
+        - tag: scope
+          value: performance
+    discovery_rules:
+    - uuid: 089d81408fad49a59c3f303574d94e32
+      name: Network interface discovery (IF-MIB)
+      type: SNMP_AGENT
+      snmp_oid: discovery[{#IFNAME},1.3.6.1.2.1.2.2.1.2,{#IFADMIN},1.3.6.1.2.1.2.2.1.7]
+      key: u7.if.discovery
+      delay: 1h
+      description: Discover interfaces via IF-MIB. IF-HC counters are ideal for the U7 Pro 2.5GbE uplink; classic counters are supplied
+        as compatibility fallback.
+      filter:
+        conditions:
+        - macro: '{#IFNAME}'
+          value: '{$U7.IF.MATCHES}'
+      item_prototypes:
+      - uuid: 5388f8d246ec4b5186a08def43c37267
+        name: 'Interface {#IFNAME}: Operational status'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.2.1.2.2.1.8.{#SNMPINDEX}]
+        key: u7.if.status[{#SNMPINDEX}]
+        delay: 2m
+        valuemap:
+          name: IF-MIB ifOperStatus
+        tags:
+        - tag: component
+          value: network
+      - uuid: 723b8b34dfbe46cface1ea7333e8fd38
+        name: 'Interface {#IFNAME}: Admin status'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.2.1.2.2.1.7.{#SNMPINDEX}]
+        key: u7.if.admin[{#SNMPINDEX}]
+        delay: 5m
+        valuemap:
+          name: IF-MIB ifAdminStatus
+        tags:
+        - tag: component
+          value: network
+      - uuid: 433a1c35d1814b9193504553fc849de2
+        name: 'Interface {#IFNAME}: Incoming traffic (64-bit)'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.2.1.31.1.1.1.6.{#SNMPINDEX}]
+        key: u7.if.hc.in[{#SNMPINDEX}]
+        delay: 1m
+        units: bps
+        description: 64-bit IF-MIB high-capacity octet counter, suitable for multi-gigabit uplinks.
+        preprocessing:
+        - type: CHANGE_PER_SECOND
+        - type: MULTIPLIER
+          parameters:
+          - '8'
+        tags:
+        - tag: component
+          value: traffic
+      - uuid: db644f41ac804a4f9e6f28b785d173ba
+        name: 'Interface {#IFNAME}: Outgoing traffic (64-bit)'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.2.1.31.1.1.1.10.{#SNMPINDEX}]
+        key: u7.if.hc.out[{#SNMPINDEX}]
+        delay: 1m
+        units: bps
+        description: 64-bit IF-MIB high-capacity octet counter, suitable for multi-gigabit uplinks.
+        preprocessing:
+        - type: CHANGE_PER_SECOND
+        - type: MULTIPLIER
+          parameters:
+          - '8'
+        tags:
+        - tag: component
+          value: traffic
+      - uuid: e8b1bc78f3ef413684b59adb061d18e1
+        name: 'Interface {#IFNAME}: Incoming traffic (32-bit fallback)'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.2.1.2.2.1.10.{#SNMPINDEX}]
+        key: u7.if.legacy.in[{#SNMPINDEX}]
+        delay: 1m
+        units: bps
+        description: Counter converted from bytes/s to bits/s. 32-bit counters may wrap at high throughput.
+        preprocessing:
+        - type: CHANGE_PER_SECOND
+        - type: MULTIPLIER
+          parameters:
+          - '8'
+        tags:
+        - tag: component
+          value: traffic
+      - uuid: 228ef4308575469abed990adfb9588a1
+        name: 'Interface {#IFNAME}: Outgoing traffic (32-bit fallback)'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.2.1.2.2.1.16.{#SNMPINDEX}]
+        key: u7.if.legacy.out[{#SNMPINDEX}]
+        delay: 1m
+        units: bps
+        description: Counter converted from bytes/s to bits/s. 32-bit counters may wrap at high throughput.
+        preprocessing:
+        - type: CHANGE_PER_SECOND
+        - type: MULTIPLIER
+          parameters:
+          - '8'
+        tags:
+        - tag: component
+          value: traffic
+      - uuid: 19d05359a31b4c4d9bd980f6267c18f9
+        name: 'Interface {#IFNAME}: Input errors'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.2.1.2.2.1.14.{#SNMPINDEX}]
+        key: u7.if.in.errors[{#SNMPINDEX}]
+        delay: 2m
+        units: pps
+        preprocessing:
+        - type: CHANGE_PER_SECOND
+        tags:
+        - tag: component
+          value: errors
+      - uuid: 1e7f9bea683a4345a0e7aed2ae9b1df3
+        name: 'Interface {#IFNAME}: Output errors'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.2.1.2.2.1.20.{#SNMPINDEX}]
+        key: u7.if.out.errors[{#SNMPINDEX}]
+        delay: 2m
+        units: pps
+        preprocessing:
+        - type: CHANGE_PER_SECOND
+        tags:
+        - tag: component
+          value: errors
+      - uuid: 18a5149c57e741498b519e4534876eef
+        name: 'Interface {#IFNAME}: Input discards'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.2.1.2.2.1.13.{#SNMPINDEX}]
+        key: u7.if.in.discards[{#SNMPINDEX}]
+        delay: 2m
+        units: pps
+        preprocessing:
+        - type: CHANGE_PER_SECOND
+        tags:
+        - tag: component
+          value: errors
+      - uuid: 471c6e6ec2f14d44aa260b9a14e5b334
+        name: 'Interface {#IFNAME}: Output discards'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.2.1.2.2.1.19.{#SNMPINDEX}]
+        key: u7.if.out.discards[{#SNMPINDEX}]
+        delay: 2m
+        units: pps
+        preprocessing:
+        - type: CHANGE_PER_SECOND
+        tags:
+        - tag: component
+          value: errors
+      graph_prototypes:
+      - uuid: b85344e71a6c4484aff79db06f6ded05
+        name: 'Interface {#IFNAME}: Traffic (64-bit)'
+        graph_items:
+        - color: 199C0D
+          item:
+            host: Ubiquiti UniFi U7 Pro by SNMP
+            key: u7.if.hc.in[{#SNMPINDEX}]
+        - sortorder: '1'
+          color: F63100
+          item:
+            host: Ubiquiti UniFi U7 Pro by SNMP
+            key: u7.if.hc.out[{#SNMPINDEX}]
+      - uuid: 932c9dd5f1154ef69d653bda02bb4c81
+        name: 'Interface {#IFNAME}: Traffic (32-bit fallback)'
+        graph_items:
+        - color: 199C0D
+          item:
+            host: Ubiquiti UniFi U7 Pro by SNMP
+            key: u7.if.legacy.in[{#SNMPINDEX}]
+        - sortorder: '1'
+          color: F63100
+          item:
+            host: Ubiquiti UniFi U7 Pro by SNMP
+            key: u7.if.legacy.out[{#SNMPINDEX}]
+      - uuid: 69c36f6a6a3843b7839dc1050d6c6c5c
+        name: 'Interface {#IFNAME}: Errors and discards'
+        graph_items:
+        - color: 199C0D
+          item:
+            host: Ubiquiti UniFi U7 Pro by SNMP
+            key: u7.if.in.errors[{#SNMPINDEX}]
+        - sortorder: '1'
+          color: F63100
+          item:
+            host: Ubiquiti UniFi U7 Pro by SNMP
+            key: u7.if.out.errors[{#SNMPINDEX}]
+        - sortorder: '2'
+          color: 1A7BC5
+          item:
+            host: Ubiquiti UniFi U7 Pro by SNMP
+            key: u7.if.in.discards[{#SNMPINDEX}]
+        - sortorder: '3'
+          color: 6C59DC
+          item:
+            host: Ubiquiti UniFi U7 Pro by SNMP
+            key: u7.if.out.discards[{#SNMPINDEX}]
+      trigger_prototypes:
+      - uuid: 6012ca59db664eff9ba07792dfeda012
+        expression: '{$U7.IF.ALERT:"{#IFNAME}"}=1 and last(/Ubiquiti UniFi U7 Pro by SNMP/u7.if.status[{#SNMPINDEX}])=2'
+        name: 'U7 Pro: Interface {#IFNAME} is down'
+        priority: AVERAGE
+        description: Set context macro {$U7.IF.ALERT:"<interface>"}=1 for the physical uplink only.
+        tags:
+        - tag: scope
+          value: availability
+    - uuid: 433892b98cd0431f86ef1db8f26ca91d
+      name: UniFi radio discovery (optional firmware MIB)
+      type: SNMP_AGENT
+      snmp_oid: discovery[{#RADIONAME},1.3.6.1.4.1.41112.1.6.1.1.1.2]
+      key: u7.radio.discovery
+      delay: 1h
+      description: Legacy UBNT-UniFi-MIB radio table. A U7 Pro may not publish these rows on all firmware; nonappearance is not a Zabbix
+        import error.
+      item_prototypes:
+      - uuid: 03d50d4113f142c2a13fd52e13d51925
+        name: 'Radio {#RADIONAME}: Radio mode / band'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.4.1.41112.1.6.1.1.1.3.{#SNMPINDEX}]
+        key: u7.radio.mode[{#SNMPINDEX}]
+        delay: 15m
+        value_type: CHAR
+        preprocessing:
+        - type: DISCARD_UNCHANGED_HEARTBEAT
+          parameters:
+          - 4h
+        tags:
+        - tag: component
+          value: radio
+      - uuid: a4bb68f1c3224e56af121e8867759205
+        name: 'Radio {#RADIONAME}: Total channel utilization'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.4.1.41112.1.6.1.1.1.6.{#SNMPINDEX}]
+        key: u7.radio.util.total[{#SNMPINDEX}]
+        delay: 2m
+        units: '%'
+        tags:
+        - tag: component
+          value: radio
+      - uuid: ef06039ae0e64362b005c898c714ee0c
+        name: 'Radio {#RADIONAME}: Self receive channel utilization'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.4.1.41112.1.6.1.1.1.7.{#SNMPINDEX}]
+        key: u7.radio.util.rx[{#SNMPINDEX}]
+        delay: 2m
+        units: '%'
+        tags:
+        - tag: component
+          value: radio
+      - uuid: 450fa5e338c843a58b0651b1bbd6651b
+        name: 'Radio {#RADIONAME}: Self transmit channel utilization'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.4.1.41112.1.6.1.1.1.8.{#SNMPINDEX}]
+        key: u7.radio.util.tx[{#SNMPINDEX}]
+        delay: 2m
+        units: '%'
+        tags:
+        - tag: component
+          value: radio
+      - uuid: d1039edfecf04635a690ada78204dd6e
+        name: 'Radio {#RADIONAME}: Receive packets'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.4.1.41112.1.6.1.1.1.4.{#SNMPINDEX}]
+        key: u7.radio.rx.pps[{#SNMPINDEX}]
+        delay: 2m
+        units: pps
+        preprocessing:
+        - type: CHANGE_PER_SECOND
+        tags:
+        - tag: component
+          value: radio
+      - uuid: 4078d0ecd8f5401e80f2396eecee521a
+        name: 'Radio {#RADIONAME}: Transmit packets'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.4.1.41112.1.6.1.1.1.5.{#SNMPINDEX}]
+        key: u7.radio.tx.pps[{#SNMPINDEX}]
+        delay: 2m
+        units: pps
+        preprocessing:
+        - type: CHANGE_PER_SECOND
+        tags:
+        - tag: component
+          value: radio
+      graph_prototypes:
+      - uuid: b309df46ccf5464685a692daef46efe7
+        name: 'Radio {#RADIONAME}: Channel utilization'
+        graph_items:
+        - color: 199C0D
+          item:
+            host: Ubiquiti UniFi U7 Pro by SNMP
+            key: u7.radio.util.total[{#SNMPINDEX}]
+        - sortorder: '1'
+          color: F63100
+          item:
+            host: Ubiquiti UniFi U7 Pro by SNMP
+            key: u7.radio.util.rx[{#SNMPINDEX}]
+        - sortorder: '2'
+          color: 1A7BC5
+          item:
+            host: Ubiquiti UniFi U7 Pro by SNMP
+            key: u7.radio.util.tx[{#SNMPINDEX}]
+      - uuid: 42c71031ef574ffeb2466d619d4c4c00
+        name: 'Radio {#RADIONAME}: Packets'
+        graph_items:
+        - color: 199C0D
+          item:
+            host: Ubiquiti UniFi U7 Pro by SNMP
+            key: u7.radio.rx.pps[{#SNMPINDEX}]
+        - sortorder: '1'
+          color: F63100
+          item:
+            host: Ubiquiti UniFi U7 Pro by SNMP
+            key: u7.radio.tx.pps[{#SNMPINDEX}]
+      trigger_prototypes:
+      - uuid: aa218f6075e84d8aa6f5d1d48bed8532
+        expression: avg(/Ubiquiti UniFi U7 Pro by SNMP/u7.radio.util.total[{#SNMPINDEX}],10m)>{$U7.RADIO.UTIL.WARN}
+        name: 'U7 Pro: Radio {#RADIONAME} channel utilization is high'
+        priority: WARNING
+        description: Radio channel busy percentage exceeded configured threshold for ten minutes.
+        tags:
+        - tag: scope
+          value: performance
+    - uuid: 9cb736538ee9427f9ba4ef47b1fc7d7d
+      name: UniFi SSID / virtual AP discovery (optional firmware MIB)
+      type: SNMP_AGENT
+      snmp_oid: discovery[{#VAPNAME},1.3.6.1.4.1.41112.1.6.1.2.1.7,{#SSID},1.3.6.1.4.1.41112.1.6.1.2.1.6]
+      key: u7.vap.discovery
+      delay: 1h
+      description: UBNT-UniFi-MIB BSSID table; each radio/SSID combination is a separate virtual AP (VAP). If unsupported by firmware,
+        no SSID rows are generated.
+      item_prototypes:
+      - uuid: 63048091e6c74db293ffdbcf8a6fd842
+        name: 'SSID {#SSID} ({#VAPNAME}): Client stations'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.4.1.41112.1.6.1.2.1.8.{#SNMPINDEX}]
+        key: u7.vap.clients[{#SNMPINDEX}]
+        delay: 2m
+        tags:
+        - tag: component
+          value: wireless
+      - uuid: f8787310e7734baf9bde7bf19b1fdaf1
+        name: 'SSID {#SSID} ({#VAPNAME}): Channel'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.4.1.41112.1.6.1.2.1.4.{#SNMPINDEX}]
+        key: u7.vap.channel[{#SNMPINDEX}]
+        delay: 5m
+        tags:
+        - tag: component
+          value: wireless
+      - uuid: 35a4b7dd3f2649f5a2891edb4c020c01
+        name: 'SSID {#SSID} ({#VAPNAME}): CCQ'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.4.1.41112.1.6.1.2.1.3.{#SNMPINDEX}]
+        key: u7.vap.ccq[{#SNMPINDEX}]
+        delay: 5m
+        units: '%'
+        tags:
+        - tag: component
+          value: wireless
+      - uuid: 10c5c195c5624ad1b7ba72df5b73b101
+        name: 'SSID {#SSID} ({#VAPNAME}): Transmit power'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.4.1.41112.1.6.1.2.1.21.{#SNMPINDEX}]
+        key: u7.vap.tx.power[{#SNMPINDEX}]
+        delay: 5m
+        units: dBm
+        tags:
+        - tag: component
+          value: wireless
+      - uuid: 0f277d97971b46869183683bd723bdf3
+        name: 'SSID {#SSID} ({#VAPNAME}): Virtual AP up state'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.4.1.41112.1.6.1.2.1.22.{#SNMPINDEX}]
+        key: u7.vap.up[{#SNMPINDEX}]
+        delay: 5m
+        tags:
+        - tag: component
+          value: wireless
+        valuemap:
+          name: TruthValue (1=true, 2=false)
+      - uuid: e0b072b719e64efbaa5f12385826aca0
+        name: 'SSID {#SSID} ({#VAPNAME}): Radio mapping'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.4.1.41112.1.6.1.2.1.9.{#SNMPINDEX}]
+        key: u7.vap.radio[{#SNMPINDEX}]
+        delay: 15m
+        value_type: CHAR
+        preprocessing:
+        - type: DISCARD_UNCHANGED_HEARTBEAT
+          parameters:
+          - 4h
+        tags:
+        - tag: component
+          value: wireless
+      - uuid: caa1040bf9a440e6820c9500fb7c9c34
+        name: 'SSID {#SSID} ({#VAPNAME}): Received traffic'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.4.1.41112.1.6.1.2.1.10.{#SNMPINDEX}]
+        key: u7.vap.rx.bps[{#SNMPINDEX}]
+        delay: 1m
+        units: bps
+        description: UBNT-UniFi-MIB Counter32; at high speeds can wrap between polls.
+        preprocessing:
+        - type: CHANGE_PER_SECOND
+        - type: MULTIPLIER
+          parameters:
+          - '8'
+        tags:
+        - tag: component
+          value: wireless
+      - uuid: 5331c28781c14c3b985ca00be7da21d1
+        name: 'SSID {#SSID} ({#VAPNAME}): Transmitted traffic'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.4.1.41112.1.6.1.2.1.16.{#SNMPINDEX}]
+        key: u7.vap.tx.bps[{#SNMPINDEX}]
+        delay: 1m
+        units: bps
+        description: UBNT-UniFi-MIB Counter32; at high speeds can wrap between polls.
+        preprocessing:
+        - type: CHANGE_PER_SECOND
+        - type: MULTIPLIER
+          parameters:
+          - '8'
+        tags:
+        - tag: component
+          value: wireless
+      - uuid: 2298d56e15b144cdacdb1357543afbe2
+        name: 'SSID {#SSID} ({#VAPNAME}): Received dropped frames'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.4.1.41112.1.6.1.2.1.12.{#SNMPINDEX}]
+        key: u7.vap.rx.dropped[{#SNMPINDEX}]
+        delay: 2m
+        units: pps
+        preprocessing:
+        - type: CHANGE_PER_SECOND
+        tags:
+        - tag: component
+          value: wireless
+      - uuid: d2ff54a0378743f89ef62691e43577c0
+        name: 'SSID {#SSID} ({#VAPNAME}): Transmitted dropped frames'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.4.1.41112.1.6.1.2.1.17.{#SNMPINDEX}]
+        key: u7.vap.tx.dropped[{#SNMPINDEX}]
+        delay: 2m
+        units: pps
+        preprocessing:
+        - type: CHANGE_PER_SECOND
+        tags:
+        - tag: component
+          value: wireless
+      - uuid: 51896968007d49b5b84ba2659938d1d6
+        name: 'SSID {#SSID} ({#VAPNAME}): Transmitted retries'
+        type: SNMP_AGENT
+        snmp_oid: get[1.3.6.1.4.1.41112.1.6.1.2.1.20.{#SNMPINDEX}]
+        key: u7.vap.tx.retries[{#SNMPINDEX}]
+        delay: 2m
+        units: pps
+        preprocessing:
+        - type: CHANGE_PER_SECOND
+        tags:
+        - tag: component
+          value: wireless
+      graph_prototypes:
+      - uuid: 59a18704621a4646becbdd9890567a45
+        name: 'SSID {#SSID} ({#VAPNAME}): Connected clients'
+        graph_items:
+        - color: 199C0D
+          item:
+            host: Ubiquiti UniFi U7 Pro by SNMP
+            key: u7.vap.clients[{#SNMPINDEX}]
+      - uuid: ee099422ce9e4ede92979b614bb14141
+        name: 'SSID {#SSID} ({#VAPNAME}): Traffic (32-bit counters)'
+        graph_items:
+        - color: 199C0D
+          item:
+            host: Ubiquiti UniFi U7 Pro by SNMP
+            key: u7.vap.rx.bps[{#SNMPINDEX}]
+        - sortorder: '1'
+          color: F63100
+          item:
+            host: Ubiquiti UniFi U7 Pro by SNMP
+            key: u7.vap.tx.bps[{#SNMPINDEX}]
+      - uuid: f8a92b9a073f42bb8a05c149b7cdc946
+        name: 'SSID {#SSID} ({#VAPNAME}): Dropped and retried frames'
+        graph_items:
+        - color: 199C0D
+          item:
+            host: Ubiquiti UniFi U7 Pro by SNMP
+            key: u7.vap.rx.dropped[{#SNMPINDEX}]
+        - sortorder: '1'
+          color: F63100
+          item:
+            host: Ubiquiti UniFi U7 Pro by SNMP
+            key: u7.vap.tx.dropped[{#SNMPINDEX}]
+        - sortorder: '2'
+          color: 1A7BC5
+          item:
+            host: Ubiquiti UniFi U7 Pro by SNMP
+            key: u7.vap.tx.retries[{#SNMPINDEX}]
+    tags:
+    - tag: class
+      value: network
+    - tag: target
+      value: unifi
+    - tag: model
+      value: U7 Pro
+    macros:
+    - macro: '{$ICMP.LOSS.WARN}'
+      value: '20'
+      description: Packet-loss percent threshold
+    - macro: '{$ICMP.RTT.WARN}'
+      value: '0.15'
+      description: Round-trip time threshold (seconds)
+    - macro: '{$U7.IF.MATCHES}'
+      value: .*
+      description: Regex filter for interface descriptions
+    - macro: '{$U7.IF.ALERT}'
+      value: '0'
+      description: Turn on down alerts per interface by host-level contextual macro.
+    - macro: '{$U7.IF.ALERT:"eth0"}'
+      value: '1'
+      description: Enable link-down warning for common physical U7 Pro Ethernet interface name; adjust if yours differs.
+    - macro: '{$U7.RADIO.UTIL.WARN}'
+      value: '85'
+      description: 10-minute average radio utilization threshold (%)
+    valuemaps:
+    - uuid: 440fb6b17dbe43be89359d5ab9dcbc3d
+      name: TruthValue (1=true, 2=false)
+      mappings:
+      - value: '1'
+        newvalue: 'True'
+      - value: '2'
+        newvalue: 'False'
+    - uuid: c80d7667bbb84030a5e308dc8fa7cf6c
+      name: IF-MIB ifOperStatus
+      mappings:
+      - value: '1'
+        newvalue: up
+      - value: '2'
+        newvalue: down
+      - value: '3'
+        newvalue: testing
+      - value: '4'
+        newvalue: unknown
+      - value: '5'
+        newvalue: dormant
+      - value: '6'
+        newvalue: notPresent
+      - value: '7'
+        newvalue: lowerLayerDown
+    - uuid: 75de1a6de6344406a2350bc575f6eaac
+      name: IF-MIB ifAdminStatus
+      mappings:
+      - value: '1'
+        newvalue: up
+      - value: '2'
+        newvalue: down
+      - value: '3'
+        newvalue: testing
+  graphs:
+  - uuid: ede0b1fe77234c97b08872e4c8184407
+    name: 'U7 Pro: ICMP latency'
+    graph_items:
+    - color: 199C0D
+      item:
+        host: Ubiquiti UniFi U7 Pro by SNMP
+        key: icmppingsec
+  - uuid: ef29122495254f9baecb303454f2b5c4
+    name: 'U7 Pro: ICMP packet loss'
+    graph_items:
+    - color: 199C0D
+      item:
+        host: Ubiquiti UniFi U7 Pro by SNMP
+        key: icmppingloss
+  - uuid: bf9732bedb9d499b97fa245090cdb0c5
+    name: 'U7 Pro: SNMP agent uptime'
+    graph_items:
+    - color: 199C0D
+      item:
+        host: Ubiquiti UniFi U7 Pro by SNMP
+        key: u7.system.uptime
